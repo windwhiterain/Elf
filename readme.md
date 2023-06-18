@@ -12,11 +12,11 @@ overhead may limit the application in per-frame real-time affairs.
 ### Embed Into Unity Or Other Python Program
 We have a socket program to handle data transfer and action 
 invoke affairs written in both C# and python,giving chance to
-embed Elf in Unity.
+embe Elf in Unity.
 
 Normally we hope to use Elf in the field of computer graphics,
 like geometry processing,physical simulation,ray tracing rendering,
-loading some data from Engine,use an algorithm process it them
+loading some data from Engine,use an algorithm to process it them
 send back.
 
 However,our design is based on general purpose.So Elf may be used
@@ -310,7 +310,7 @@ same plugin
 ```
 ## Advantages Over The Node System Of Houdini
 1. Data are typed by schema.While houdini has no type system.
-2. Interface gives an efficient way operator the ability to
+2. Interface gives an efficient way for operator to
 process data in different schema.While houdini have to specify
 the way operator interpret the data, on operator itself.
 3. Duplication is minimized.While houdini have cache on nealy 
