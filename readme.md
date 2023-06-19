@@ -46,7 +46,7 @@ graph TB
 ```
 1. InputData:data in particular access schema while memory schema could vary.
 2. Operator:access and even modify data in particular access schema.
-3. interface:define a access schema transition between data and operator.
+3. interface:edit schema on data flow,add or delete,and make sense of the added.
 4. duplicate:when accessed by multiple operator,data need to be duplicated,or previous access would affect the latter.However,read only access would not,so there won't be duplication for that.
 5. OutputData:data in particular access schema that need to be filled.
 ### Data flow
@@ -65,6 +65,27 @@ graph TB
 ### Access Schema
 ```mermaid
 graph TB
+    in[InputData]
+    in2[InputData]
+    out[OutputData]
+    out2[OutputData]
+    int(interface)
+    int2(interface)
+    op[Operator]
+    o1(( ))
+    o2(( ))
+    in--schema1,schema2--- int--schema1,schema2,schema3--- o1---->out
+    o2 & o1--choose compatible schema3-->op
+    in2--schema3,schema4,schema5--- int2--schema3--- o2---->out2
+```
+Data flow can have multiple access schema on it.When a operator
+perform process on a data flow,it has to choose a compatible
+schema to perform on.Access schema is a subset of the original data
+so it limits operators and made it possible for one operator to
+process on multiple differently structured data flow in the same
+access schema.
+```mermaid
+graph TB
     subgraph g1[reference]
         n12[Compound]
     end
@@ -79,6 +100,8 @@ graph TB
     n9[dimension]-.-n6[taichi.field]
     n8[type]---n6 & n7[variable]-.->n5[primitive]
 ```
+Data in schema are made into multiple data port to be accessed,
+which is structured like:
 1. Primitive:accessible port in field or variable form of a certain type like int,float3,etc.The access schema can specify field primitive's dim or not,which means any operator processing in such schema should be independent of size on each dimension or even dimension.However,field's shape is changing all the time while accessible,so schema should never specify it.
 2. Compound:a namespace for its sub-primitives and sub-compounds.Apart from the name,it should be a reference to another defined access schema.
 ```mermaid
@@ -99,53 +122,61 @@ and same domain of index.Group some primitives and defined shape
 constrain into a new shape constrain,which provide memory
 allocation method and a specific index type only allowed to use in
 constrain members.
-### Interface:Schema Transition
+### Interface:Add Schema To Data Flow
+Besides the schema exists since the data flow was created,interface
+can add a new one to the data flow,by making references to the
+data port of existing schema. 
 ```mermaid
 graph LR
-    io1[output data flow] 
-    io2[input data flow]
+    io1[input data flow] 
+    io2[output data flow]
     subgraph interface
-         subgraph g1[branch Data]
-            s1[Schema]---p1[Primitive] & c1[Compound]
-            c1---p2[Primitive] 
+         subgraph g0[exist schema]
+            s0[Schema]---p1[Primitive] 
          end
-         subgraph g2[existed Data]
+         subgraph g1[exist schema]
+            s1[Schema]--- c1[compound]---p2[Primitive] & p6[Primitive]
+         end
+         subgraph g2[new schema]
             p4[Primitive] & c2[Compound]---s2[Schema]
-            p5[Primitive] & p6[Primitive]---c2
+            p5[Primitive] ---c2
          end
          p2-.-l(connection)-.-p4
          p1-.-p5
     end
-    s1-->io1
-    io2-->s2
+    io1-->s1 & s0
+    s2-->io2
+    io1-->io2
 ```
 ```mermaid
 graph LR
-    io1[output data flow] 
-    io2[input data flow]
+    io1[input data flow] 
+    io2[output data flow]
     subgraph interface
-         subgraph g1[branch Data]
+         subgraph g1[exist schema]
             s1[Schema]---c3[Compound] & c1[Compound] 
             c1---p2[Primitive] & p1[Primitive] 
          end
-         subgraph g2[existed Data]
+         subgraph g2[new schema]
             c4[Compound] & c2[Compound]---s2[Schema]
             p5[Primitive] & p6[Primitive]---c2
          end
          p2-.-p5
          p1-.-p6
          c3-.-c4
-         p2-.equal to.->c3
+         c1-.equal to.->c3
     end
-    s1-->io1
-    io2-->s2
+    io1-->s1
+    s2-->io2
+    io1-->io2
 ```
-1. connection:define a reference from one of the branch Data's
-access port to the existed Data's access port.It can be performed
-on two Primitives or two Compound in compatible schema.Performing
+1. connection:define a reference from one data port of the new schema
+to a exists schema's data port.It can be performed
+on two primitives or two Compound in compatible schema.Performing
 on Compound is equal to performing on every component of it.
-2. branch Data,exist Data:not a duplication but a reference to an existed Data's subset.
-3. input,output data flow:the type of data flow won't change from 
+2. The output data flow is not a duplication but a
+reference to the existed Data's subset.
+3. The type of data flow won't change from 
 input to output.Branch data flow use this to fit the access schema
 of the operator it is sent to;main data flow use this to change access
 schema for next part of the network. 
