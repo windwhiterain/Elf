@@ -218,7 +218,7 @@ graph TB
     in2[InputData]
     out2[OutputData]
     in2--- o1(( ))--main data flow-->out2
-    subgraph g3[reference]
+    subgraph g3[reference to the folded]
         op1[new Operator]
     end
     o1--branch data flow-->op1
@@ -229,15 +229,15 @@ graph TB
         in1[InputData]
         out1[OutputData]
         int1(interface)
-        sc1(Schema)
-        sc2(schema)
+        sc1(Schemas)
+        sc2(schemas)
         in1--- sc1--- int1--- sc2 -->out1
     end
     in2[InputData]
     out2[OutputData]
-    sc3(Schema)
-    sc4(schema)
-    subgraph g3[reference]
+    sc3(Schemas)
+    sc4(schemas)
+    subgraph g3[reference to the folded]
         op1[new Operator]
     end
     sc1-.-sc3
@@ -255,8 +255,9 @@ end,and the operator has no output.However,the output data node
 in the network is still make sense by acting as the starting 
 point for solving the dependency graph indicated by the network.
 4. If a main data flow is sent to the new operator,the operator
-generate a main data flow in the schema indicated by the ouput
+generate a main data flow with schemas indicated by the output
 data node of the network.
+5. From this point of view,interface node is a kind of operator.
 ## Plugin
 In Elf,a project is a plugin.
 ### Directory Structure
