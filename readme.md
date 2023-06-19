@@ -349,8 +349,16 @@ the way operator interpret the data, on operator itself.
 3. Duplication is minimized.While houdini have cache on nealy 
 every node.
 4. Operator can be viewed as an input to another operator through
-branch data flow,with the help of access schema.Which can hardly
-be done in houdini because of its purely functional semantics.
+branch data flow.
+5. One operator can accept multiple input data flow in different
+structure as long as they share a same access schema that compatible
+with the operator.In houdini,you have to specify the way operator
+process the data for every input,and have to group the inputs to
+one,send to the operator then split them again.
+6. Operators work by its side effects,rather than copy it then modify
+it and pass it on.As a result,Operator can be viewed as an input
+to another operator,Which can hardly be done in houdini because
+of its purely functional semantics.
 
 
 
