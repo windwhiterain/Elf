@@ -350,15 +350,24 @@ the way operator interpret the data, on operator itself.
 every node.
 4. Operator can be viewed as an input to another operator through
 branch data flow.
+5. Data and Operation are separated while houdini mixed them into 
+nodes.
 5. One operator can accept multiple input data flow in different
 structure as long as they share a same access schema that compatible
 with the operator.In houdini,you have to specify the way operator
 process the data for every input,and have to group the inputs to
 one,send to the operator then split them again.
 6. Operators work by its side effects,rather than copy it then modify
-it and pass it on.As a result,Operator can be viewed as an input
-to another operator,Which can hardly be done in houdini because
-of its purely functional semantics.
+it and pass it on.However,houdini use purely functional semantics.
+7. Operator can be viewed as an input to another operator,
+Which can hardly be done in houdini.
+8. To meet the need illuminated in [5]() and [7](),in houdini,
+you may make references from multiple nodes to one node,
+the one node is viewed as a parameter to the network that refers
+to it,or viewed as a node process the data in the nodes that 
+refers to it.However,you cannot change the referred node's type
+or the reference on attribute level would fail to maintain.Now
+you can easily achieve that via Elf.
 
 
 
