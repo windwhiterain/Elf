@@ -52,7 +52,7 @@ graph TB
 ### Data flow
 ```mermaid
 graph TB
-    in[InputData]--main data flow---d1(( ))---d2(( ))-->out[OutputData]
+    in[InputData]--main data flow---d1(( ))--main data flow---d2(( ))--main data flow-->out[OutputData]
     d1--branch data flow-->i1[Interface]-->op1[Operator]
     d2--branch data flow-->i2[Interface]-->op2[Operator]
     d3(( ))-.means.-d4((branch))
@@ -257,7 +257,77 @@ point for solving the dependency graph indicated by the network.
 4. If a main data flow is sent to the new operator,the operator
 generate a main data flow with schemas indicated by the output
 data node of the network.
-5. From this point of view,interface node is a kind of operator.
+5. From this point of view,interface node is a kind of operator
+except that it can pass branch data flow on because it actually
+changes the data flow while keeps the data untouched.
+## Branch Data Flow:Template Programming
+When writing code,we can make a function that accept a function
+as its parameter and use it inside.Our network has no reason
+not to support such thoughtful idea.
+```mermaid
+graph TB
+    op1[input operator]
+    subgraph g1[network]
+        in[InputData]
+        out[OutputData]
+        o1(( ))
+        op2[Operator A]
+        o2(( ))
+        subgraph g2[reference to a folded]
+            op3[Operator B]
+        end
+        in--- o1--- op2--- o2--- op3--main data flow-->out
+        o1 & o2--branch data flow-->o3(cluster)
+        op3--the input port of B-->o3
+    end
+    o3==as an input port of the network==>op1
+```
+The process in the network first execute the input node outside,
+then the operator A,then the input operator again,then B.And 
+During the process in B,the data flow branches somewhere inside B,
+out to the network,merged then out to input operator and execute 
+it once again.
+## Cluster
+Seemingly merge multiple data flow into one,actually every data flow
+is still separated.When operator process one a data flow cluster,
+it process each data flow inside separately.
+
+Its usage is quite similar to the Task Operator Network or PDG
+in Houdini.The philosophy behind this is that operator should
+get its parameter from input data instead of attributes.And that's
+why there could be variable primitive in access schema.
+
+With different variable stored in data,a cluster is not processed
+uniformly.Combined with duplicate,it could be used
+to make varieties.
+```mermaid
+graph TB
+in[InputData]
+out[OutputData]
+cl(cluster with duplication)
+op1[randomized based on data flow's order]
+op2[variation based on random data from its access schema]
+me(merge)
+in--- cl=== op1=== op2=== me-->out
+ ```
+## Merge
+Merge actually merge multiple data flow into single one,union
+there access schemas,and create shape constrain.This is used
+when we add additional structure on something like bounding box
+or randomize value.
+```mermaid
+graph TB
+    in1[InputData]
+    out1[OutputData]
+    o11(( ))
+    o12(( ))
+    nd1[NewData]
+    me1[merge]
+    op1[compute bounding box]
+    in1--schema of triangle--- o11--- me1--schema of triangle and bounding box-->out1
+    nd1--schema of bounding box--- o12--- me1
+    o12 & o11-->op1
+```
 ## Plugin
 In Elf,a project is a plugin.
 ### Directory Structure
