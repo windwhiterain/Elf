@@ -234,10 +234,10 @@ In Elf,a project is a plugin.
     ```json
       {
         "dependency": [
-          {"URL": "a valid URL of another plugin"}
+          {"URL": "a valid URL of another plugin-loader"}
         ],
         "version":[0,0,1],
-        "description": "template plugin for instruction",
+        "description": "template plugin-loader for instruction",
       }
     ```
   - code
