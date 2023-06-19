@@ -269,7 +269,8 @@ In Elf,a project is a plugin.
           {"URL": "a valid URL of another plugin_loader"}
         ],
         "version":[0,0,1],
-        "description": "template plugin_loader for instruction",
+        "name": "template",
+        "description": "template plugin for instruction",
       }
     ```
   - code
@@ -334,7 +335,7 @@ same plugin
   class MoveLight:
       @taichi.kernel
       def process(self,light:taichi.template()):
-          for index in ndrange(light.line_sc.shape):
+          for index in taichi.ndrange(light.line_sc.shape):
               start=light.ray.start[index]
               direction=light.ray.direction[index]
               energe=light.energe[index]
@@ -347,6 +348,9 @@ process data in different schema.While houdini have to specify
 the way operator interpret the data, on operator itself.
 3. Duplication is minimized.While houdini have cache on nealy 
 every node.
+4. Operator can be viewed as an input to another operator through
+branch data flow,with the help of access schema.Which can hardly
+be done in houdini because of its purely functional semantics.
 
 
 
