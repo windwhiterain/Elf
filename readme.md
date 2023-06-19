@@ -13,7 +13,7 @@ catalogue:
 1. [Application](#application)
 2. [Network](#network)
    1. [Basic Node](#basic-node)
-   2. [Network](#network)
+   2. [Data Flow](#data-flow)
 3. [Data Access Schema](#data-access-schema)
    1. [Interface:Edit Schemas of Data Flow](#interface--edit-schemas-of-data-flow)
 4. [Duplicate](#duplicate)
