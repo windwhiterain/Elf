@@ -1,5 +1,5 @@
 # Elf -- A node based operator network based on taichi-lang
-We have the following features:
+features:
 1. parallel process:with the powerful taichi-lang,we don't have to
 write low level compute shader to run parallel algorithm on GPU.
 2. dependency graph:like Unreal,Houdini,Blender,we use a dependency
@@ -7,7 +7,25 @@ graph to organize an algorithm in higher level,which brings much
 more flexibility and intuitiveness.However,we have made some changes
 to improve some aspects.
 3. Embed into other Engine by transferring data via socket.This 
-overhead may limit the application in per-frame real-time affairs. 
+overhead may limit the application in per-frame real-time affairs.
+
+catalogue:
+1. [Application](#application)
+2. [Network](#network)
+   1. [Basic Node](#basic-node)
+   2. [Network](#network)
+3. [Data Access Schema](#data-access-schema)
+   2. [Interface:Edit Schemas of Data Flow](#interface--edit-schemas-of-data-flow)
+4. [Duplicate](#duplicate)
+5. [Network Folding](#network-folding)
+6. [Branch Data Flow:Template Programming](#branch-data-flow--template-programming)
+7. [Cluster](#cluster)
+8. [Merge](#merge)
+9. [Plugin](#plugin)
+   1. [Directory Structure](#directory-structure)
+   2. [Compile To Taichi](#compile-to-taichi)
+10. [Advantages Over The Node System Of Houdini](#advantages-over-the-node-system-of-houdini)
+11. [Read More](#read-more)
 ## Application
 ### Embed Into Unity Or Other Python Program
 We have a socket program to handle data transfer and action 
@@ -61,8 +79,7 @@ graph TB
 2. main data flow:from where branch data flow could branch.The order of branch indicates the order of process.
 3. branch data flow:could not branch.
 4. As a result,there only exist one main data flow to determine the only process order.
-## Data Schema
-### Access Schema
+## Data Access Schema
 ```mermaid
 graph TB
     in[InputData]
@@ -122,7 +139,7 @@ and same domain of index.Group some primitives and defined shape
 constrain into a new shape constrain,which provide memory
 allocation method and a specific index type only allowed to use in
 constrain members.
-### Interface:Add Schema To Data Flow
+### Interface:Edit Schemas of Data Flow
 Besides the schema exists since the data flow was created,interface
 can add a new one to the data flow,by making references to the
 data port of existing schema. 
@@ -438,6 +455,15 @@ to it,or viewed as a node process the data in the nodes that
 refers to it.However,you cannot change the referred node's type
 or the reference on attribute level would fail to maintain.Now
 you can easily achieve that via Elf.
+9. Only use part of the accessed data as the parameter of the
+operator,no property panel for the operator,which is born 
+procedural.In Houdini,it's cumbersome to extract the data then
+refer to them in property panel.To describe the dependency
+between the properties Houdini applied property reference,
+which is hard to visualize and debug.When the network grows
+bigger,that will lead to a disaster.
+## Read More
+1. [Developer Guidance](developer%20guidance.md)
 
 
 
