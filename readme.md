@@ -353,7 +353,7 @@ In Elf,a project is a plugin.
     ```json
       {
         "dependency": [
-          {"URL": "a valid URL of another plugin_loader"}
+          {"git": "a valid git-link of the dependent plugin from where it will be download",}
         ],
         "version":[0,0,1],
         "name": "template",
@@ -393,7 +393,7 @@ In Elf,a project is a plugin.
 4. ./network:store network directory build by Elf.
 5. ./network/\<network name>:an example network that inner content
 should only be accessed via Elf. 
-6. When editing a plugin's network in Elf,schemas and operators
+6. When editing a plugin's network in Elf,only schemas and operators
 defined in the same plugin or its dependent plugin is available.
 same plugin 
 ### Compile To Taichi
@@ -463,7 +463,7 @@ between the properties Houdini applied property reference,
 which is hard to visualize and debug.When the network grows
 bigger,that will lead to a disaster.
 ## Read More
-1. [Developer Guidance](developer%20guidance.md)
+1. [Developer Guide](developer%20guide.md)
 
 
 

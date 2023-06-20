@@ -1,5 +1,3 @@
-from taichi import *
-from taichi.math import *
 schema=None
 operator=None
 class ShapeConstrain:
