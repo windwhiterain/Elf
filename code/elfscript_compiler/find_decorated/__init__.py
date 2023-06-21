@@ -1,5 +1,5 @@
 from ast import *
-from ..common import *
+from code.elfscript_compiler.common import *
 elf_id="meta"
 
 def find_decorated(module:Module)->Decorated:
@@ -45,4 +45,6 @@ if __name__=='__main__':
     for snippet in res.operators:
         print(snippet.elf_ids)
         print(dump(snippet.classdef, indent=1))
+
+
 

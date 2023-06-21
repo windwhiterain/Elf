@@ -1,0 +1,5 @@
+@data_oriented
+class Ray:
+    start:vec3[1]#field primitive,dimension is 1
+    direction:vec3[1]
+    all_sc=elf.ShapeConstrain(start,direction)

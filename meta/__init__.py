@@ -1,3 +1,5 @@
+import taichi
+taichi=taichi
 schema=None
 operator=None
 class ShapeConstrain:

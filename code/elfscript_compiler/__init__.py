@@ -1,6 +1,6 @@
 from code.common import *
 import ast
-import find_decorated
+import code.elfscript_compiler.find_decorated
 
 
 def compile(code:str)->tuple[list[type[Schema]],list[type[Operator]]]:

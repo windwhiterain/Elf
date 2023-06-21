@@ -18,7 +18,7 @@ class Light:
 @elf.operator
 @kernel
 class MoveLight(elf.Operator):
-    def process(self,light:Light):#entry:parameter type determines the schema
+    def process(self,light:Light[1,2]):#entry:parameter type determines the schema
         for index in ndrange(light.line_sc.shape):#get shape from ShapeConstrain
             start=light.ray.start[index]
             direction=light.ray.direction[index]
