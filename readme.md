@@ -1,8 +1,8 @@
 # Elf -- A node based operator network based on taichi-lang
 features:
-1. parallel process:with the powerful taichi-lang,we don't have to
+1. GPU Parallel:with the powerful taichi-lang,we don't have to
 write low level compute shader to run parallel algorithm on GPU.
-2. dependency graph:like Unreal,Houdini,Blender,we use a dependency
+2. Improved Dependency Graph:like Unreal,Houdini,Blender,we use a dependency
 graph to organize an algorithm in higher level,which brings much 
 more flexibility and intuitiveness.However,we have made some changes
 to improve some aspects.
@@ -41,310 +41,442 @@ However,our design is based on general purpose.So Elf may be used
 to machine learning,embed into a python program with or without
 using the socket program as it is written in python.
 ## Network
-### Basic Node
+### Basic Idea
 ```mermaid
 graph TB
-    A[InputData1]---->J(( ))-->F(duplicate)
-    B(( ))-->M[OutputData1]
+    inp(input data)
+    oup(output data)
+    o1(( ))
+    o2(( ))
+    o3(( ))
+    op1[Operator]
+    op2[Operator]
+    op3[Operator]
+    inp-->o1-->o2-->o3-->oup
+    o1--- op1
+    o2--- op2
+    o3--- op3
+```
+Use Operator's side effect on data as the basic process unit,
+dataflow branch then sent to Operator to be processed.
+
+As long as each branched dataflow is only sent to one operator,
+the dependency is clear.
+### Basic Nodes
+```mermaid
+graph TB
+    A(input data)---->J(( ))-->F(reform)
+    B(( ))-->rf
     F-->G(( ))
-    Q[InputData3]---->R(( ))
+    Q(initial data)---->R(( ))
     subgraph g1[process]
-        D[Operator]---E(interface)---B
-        D[Operator]---S(interface)---R
+        D[Operator]---E[Interface]---B
+        D[Operator]---S[Interface]---R
     end
     F-->B
     subgraph g2[process]
-        H[Operator]---T(interface)---O
-        H[Operator]---I(interface)---G
+        H[Operator]---T[Interface]---O
+        H[Operator]---I[Interface]---G
     end
-    N[InputData2]--->O(( ))-->P[OutputData2]
+    N(initial data)--->O(( ))-->rf(reform)-->M[Interface]-->op[Operator]-->P(output data)
     subgraph g3[process]
-        K[Operator]---L(interface)---J
+        K[Operator]---L[Interface]---J
     end
 ```
-1. InputData:data in particular access schema while memory schema could vary.
-2. Operator:access and even modify data in particular access schema.
-3. interface:edit schema on data flow,add or delete,and make sense of the added.
-4. duplicate:when accessed by multiple operator,data need to be duplicated,or previous access would affect the latter.However,read only access would not,so there won't be duplication for that.
-5. OutputData:data in particular access schema that need to be filled.
-### Data flow
+- input data:generator a dataflow contains the input datas
+of the network. 
+- initial data:generate a dataflow contains arbitrary data.
+- Operator Node:a type of nodes that mainly read and modify data
+flowed in,via an interface on the
+flow that compatible with the operator's schema.
+- Interface Node:a type of nodes that edit the interfaces on
+data flow,leave the data untouched.
+- reform:merge,split dataflow,or exchange the interfaces inside.
+- output data:end a dataflow.Need to be filled by a dataflow
+with a interface compatible with the node's schema.
+### Dataflow
 ```mermaid
 graph TB
-    in[InputData]--main data flow---d1(( ))--main data flow---d2(( ))--main data flow-->out[OutputData]
-    d1--branch data flow-->i1[Interface]-->op1[Operator]
-    d2--branch data flow-->i2[Interface]-->op2[Operator]
+    in(input data)--main data flow-->d1(( ))--main data flow-->d2(( ))--main data flow-->out(output data)
+    d1--branch data flow--- i1[Interface]--- op1[Operator]
+    d2--branch data flow--- i2[Interface]--- op2[Operator]
     d3(( ))-.means.-d4((branch))
 ```
-1. Both of the data flow can be sent to only one node with compatible access schema then end.
-2. main data flow:from where branch data flow could branch.The order of branch indicates the order of process.
-3. branch data flow:could not branch.
-4. As a result,there only exist one main data flow to determine the only process order.
-## Data Access Schema
+Dataflow comes from a node's output and is sent to another
+node's input,contains interfaces referring to the actual data.
+- main data flow:from where branch data flow could branch.
+- branch data flow:could not branch.
+
+Branching do not change the content of the dataflow,just a 
+constraint to make sure the process order is clear.
+
+As a result,there only exist linear main dataflow determined
+a linear dependency,which indicated a determined sequence of
+processing.
 ```mermaid
 graph TB
-    in[InputData]
-    in2[InputData]
-    out[OutputData]
-    out2[OutputData]
-    int(interface)
-    int2(interface)
+    inp(input data)
+    oup(output data)
+    rf1(reform)
+    rf2(reform)
+    inp-- main dataflow 1-->rf1
+    rf1-- main dataflow 2-->rf2
+    rf1-- main dataflow 3-->rf2
+    rf2-- main dataflow 4-->oup
+```
+There may exit multiple main dataflows in a network,some have
+dependency while some are not.
+
+In this case,dataflow 2,3 depend on 1,4 depend on 2,3.Dataflow
+2,3 are independent of each other
+### Interface
+```mermaid
+graph TB
+    subgraph g0[Interface]
+        dp1(data port)
+        dp2(data port)
+        dp3(data port)
+    end
+    subgraph g1[Interface]
+        dp4(data port)
+        dp5(data port)
+    end
+    subgraph g2[Initial Interface]
+        dp6(data port)
+        dp7(data port)
+        dp8(data port)
+        dp9(data port)
+    end
+    subgraph g3[datas]
+        dt1(data)
+        dt2(data)
+        dt3(data)
+        dt4(data)
+    end
+    dp1-->dp4
+    dp2-->dp5
+    dp3-->dp9
+    dp4-->dp6
+    dp5-->dp8
+    dp6-->dt1
+    dp7-->dt2
+    dp8-->dt3
+    dp9-->dt4
+```
+Interface is a reference to a subset of the actual data.It limits
+operators and made it possible for one operator to
+process on multiple differently structured dataflows via interfaces
+in same schema.
+
+Interface has a nestable structure of a set of data port.The
+structure is derived from the schema,which will
+be covered latter.
+
+Data port is a reference to the actual data or a data port of
+another interface.However,a data port finally indicate an actual
+data via the reference chain.
+
+In a data flow,interfaces lay on each other.
+```mermaid
+graph TB
+    in(input data)
+    in2(input data)
+    out(output data)
+    out2(output data)
+    int[Interface]
+    int2[Interface]
     op[Operator]
     o1(( ))
     o2(( ))
-    in--schema1,schema2--- int--schema1,schema2,schema3--- o1---->out
-    o2 & o1--choose compatible schema3-->op
-    in2--schema3,schema4,schema5--- int2--schema3--- o2---->out2
+    in--interface1,interface2--- int--interface1,interface2,interface3--- o1---->out
+    o2 & o1--choose compatible interface3-->op
+    in2--interface3,interface4,interface5--- int2--interface3--- o2---->out2
 ```
-Data flow can have multiple access schema on it.When a operator
-perform process on a data flow,it has to choose a compatible
-schema to perform on.Access schema is a subset of the original data
-so it limits operators and made it possible for one operator to
-process on multiple differently structured data flow in the same
-access schema.
-```mermaid
-graph TB
-    subgraph g1[reference]
-        n12[Compound]
-    end
-    n10[Schema]-->n11[Primitive] & n12
-    n0[Schema]-->n1[Primitive] & n2[Compound]
-    subgraph g2[reference]
-        subgraph g3[reference]
-            n4[Compound]
-        end
-        n2-->n3[Primitive] & n4
-    end
-    n9[dimension]-.-n6[taichi.field]
-    n8[type]---n6 & n7[variable]-.->n5[primitive]
+Interfaces flow down with dataflow,edited by 
+interface node.When an operator perform process
+on a data flow,it has to choose an interface with compatible
+schema from the dataflow,to perform on.
+### Schema
+```python
+#use elfscript to define Shcema 
+class Schema1:
+    field1:int
+    field2:int[3]
+    field3:float[3]
+    shape_constriant1=ShapeConstraint(field2,field3)
+    readonly(field1)
+class Shcema2:
+    field1:Schema1
+    field2:float[3]
+    field3:int[1]
+    field4:float[1]
+    field5:str
+    shape_constraint1=ShapeConstraint(field1.shape_constrian1,field2)
+    shape_constraint2=ShapeConstraint(field3,field4)
+    readonly(field3,field1.field2)
 ```
-Data in schema are made into multiple data port to be accessed,
-which is structured like:
-1. Primitive:accessible port in field or variable form of a certain type like int,float3,etc.The access schema can specify field primitive's dim or not,which means any operator processing in such schema should be independent of size on each dimension or even dimension.However,field's shape is changing all the time while accessible,so schema should never specify it.
-2. Compound:a namespace for its sub-primitives and sub-compounds.Apart from the name,it should be a reference to another defined access schema.
-```mermaid
-graph TB
-    n10[Schema]-->n11[Primitive] & n12[Primitive] 
-    n11 & n12-->n13[ShapeConstrain]
-    n0[Schema]-->n1[Primitive] & n2[Compound]
-    subgraph g2[reference]
-        n2-->n3[Primitive] & n4[Primitive] & n14[ShapeConstrain]
-    end
-    n1 & n14-->n15[ShapeConstrain]
-    n16[ShapeConstrain]-->n17(allocation) & n18(index type)
+Schema is a description of a nestable data structure like many 
+General-purpose programming languages.It's the way an operator,
+or your code,access the data.
+#### Field Type Annotation
+```python
+<field_name>:<type>[<dimension>]
+"""compile to:"""
+self.field_name=taichi.field(dtype=<type>,shape=(...))
+#len(shape)=<dimension>
 ```
-3. ShapeConstrain:some field primitives are logically struct
+A type annotation with a subscript stands for a
+taichi field of particular type,the index stands for the dimension.
+However,the size of each dimension,or shape,is not a part of the
+schema definition,should be considered changing all the time.
+
+A type annotation without subscript stands for itself.
+#### Shape Constraint
+```python
+<shape_constraint_name>:ShapeConstrain(<field_name>[,...])
+```
+Some datas are logically a struct
 of array that different components of a struct are stored in
-separate field primitives,which means they share a same shape
-and same domain of index.Group some primitives and defined shape
-constrain into a new shape constrain,which provide memory
+separate data,which means they share a same shape
+and same domain of index.Group some primitives or defined shape
+constraints into a new shape constraint,which provide memory
 allocation method and a specific index type only allowed to use in
-constrain members.
-### Interface:Edit Schemas of Data Flow
-Besides the schema exists since the data flow was created,interface
-can add a new one to the data flow,by making references to the
-data port of existing schema. 
+constrained members.
+#### Readonly Constraint
+```python
+readonly(<field_name>[,...])
+```
+To know the datas been modified is crucial to Optimize the 
+duplication.Before Elf have a more powerful code analyzer to
+automatically figure out a Operator's code's modification,
+you are supposed to use readonly constraint to help the 
+information collection.
+
+What's more,the output data's usage,which is beyond Elf's
+control,can only be optimized via readonly constraint.
+## Nodes
+A node have one or multiple input dataflows and one or multiple
+output dataflow.However,node only accept a particular type of
+input and generator a particular type of output,which means
+each input stores the actual interface it accepted,and the 
+dataflow it connected to is just a constraint of the choice.
+### Interface Node
 ```mermaid
 graph LR
-    io1[input data flow] 
-    io2[output data flow]
-    subgraph interface
-         subgraph g0[exist schema]
-            s0[Schema]---p1[Primitive] 
-         end
-         subgraph g1[exist schema]
-            s1[Schema]--- c1[compound]---p2[Primitive] & p6[Primitive]
-         end
-         subgraph g2[new schema]
-            p4[Primitive] & c2[Compound]---s2[Schema]
-            p5[Primitive] ---c2
-         end
-         p2-.-l(connection)-.-p4
-         p1-.-p5
-    end
-    io1-->s1 & s0
-    s2-->io2
-    io1-->io2
+subgraph g1[input dataflow]
+    int1(interface)
+    int2(interface)
+    int3(interface)
+end
+int[interface edit]
+subgraph g2[output dataflow]
+    int4(interface)
+    int5(interface)
+end
+int1-->int-->int4
+int2-->int
+int3-->int5
 ```
+Have only one input and output.
+Edit the accepted interfaces,remove,append,or
+modify its data ports' references,readonly constraints.However,
+shape constraints should not be changed once they are created.
+At last apply its edit action to input dataflow as its output.
+### Operator Node
 ```mermaid
 graph LR
-    io1[input data flow] 
-    io2[output data flow]
-    subgraph interface
-         subgraph g1[exist schema]
-            s1[Schema]---c3[Compound] & c1[Compound] 
-            c1---p2[Primitive] & p1[Primitive] 
-         end
-         subgraph g2[new schema]
-            c4[Compound] & c2[Compound]---s2[Schema]
-            p5[Primitive] & p6[Primitive]---c2
-         end
-         p2-.-p5
-         p1-.-p6
-         c3-.-c4
-         c1-.equal to.->c3
-    end
-    io1-->s1
-    s2-->io2
-    io1-->io2
+subgraph g1[input dataflow]
+    int1(interface)
+    int2(interface)
+    int3(interface)
+end
+int[interface edit and data modify]
+subgraph g2[output dataflow]
+    int4(interface)
+    int5(interface)
+end
+int1-->int-->int4
+int2-->int
+int3-->int5
 ```
-1. connection:define a reference from one data port of the new schema
-to a exists schema's data port.It can be performed
-on two primitives or two Compound in compatible schema.Performing
-on Compound is equal to performing on every component of it.
-2. The output data flow is not a duplication but a
-reference to the existed Data's subset.
-3. The type of data flow won't change from 
-input to output.Branch data flow use this to fit the access schema
-of the operator it is sent to;main data flow use this to change access
-schema for next part of the network. 
-## Duplicate
+Have only one input and output.
+Edit the accepted interfaces as interface node do,
+as well as modify the data via the interfaces.
+When the input dataflow is branch dataflow,
+operator is not allowed to generate output dataflow.
+### Reform Node
 ```mermaid
 graph TB
-    in[InputData]--main data flow-->du(duplicate)--main data flow-->op1[Operation A] & op2[Operation B]
+    in(input data)--main data flow-->du(duplicate)--main data flow-->op1[Operation A] & op2[Operation B]
 ```
-1. Output multiple main data flow,each one is independent of others.
+Input multiple main dataflows and output multiple main dataflows
+with interfaces in accepted interfaces,
+each output dataflow is independent of others
+guaranteed by data duplication.
 ```mermaid
 graph TB
-    subgraph Data
-        p1(port)
-        p2(port)
-        p3(port)
+    subgraph Datas
+        subgraph g0[not]
+            p1(data)
+        end
+        subgraph g1[not]
+            p4(data)
+        end
+        subgraph g2[duplicate]
+            p2(data)
+        end
+        subgraph g3[duplicate]
+            p3(data)
+        end
     end
     f1[data flow]
     f2[data flow]
     f3[data flow]
+    p4-->w0[write ^1]---f2
     p1-->r1[read]---f1 & f2
-    p2-->w1[write ^n]
+    p2-->w1[write ^2]
     w1---f2
-    w1-.-f1
+    w1---f1
     p3-->r2[read] & w2[write ^1]
     r2---f1
     w2---f3
 ```
-2. To figure out the way with minimum duplications of port data,collect the following read and write on port for each data flow
-3. For each port,according to the number of data flow that read and write on it,decide whether a duplication is needed.
-## Network Folding
-Network can be folded as operator.
+To figure out the way with minimum duplications of data,
+Elf will collect the following read and write on data port for each
+data flow.
+
+For each port,according to the number of data flow that read and
+write on it,decide whether a duplication is needed.
+### Generic Node
 ```mermaid
 graph TB
-    subgraph g1[network to fold]
-        in1[InputData]
-        out1[OutputData]
+    subgraph g1[loaded nodes]
+        op0[Operator1]
+        op1[Operator2]
+        op2[Interface1]
+        op3[Interface2]
+    end
+    init(initial data)
+    inp(input data)
+    rf(reform)
+    int[Interface]
+    gen(Generic)
+    oup[output data]
+    init-- node reference-->rf
+    inp-- operator interface-->rf
+    rf--node reference,operator interface-->int
+    int-- generic interface-->gen-->oup
+    
+    gen--use node reference to find-->op1
+```
+Accept a generic interface that contains node reference data,
+use this reference to find the node in loaded nodes,use that
+node to process the data in the other part of the interface.
+## Network Node
+```mermaid
+graph TB
+    subgraph g1[network]
+        in1(input data)
+        out1(output data)
         in1--main data flow-->out1
     end
-    in2[InputData]
-    out2[OutputData]
+    in2(input data)
+    out2(output data)
     in2--- o1(( ))--main data flow-->out2
-    subgraph g3[reference to the folded]
-        op1[new Operator]
+    subgraph g3[reference]
+        op1[Network Operator]
     end
     o1--branch data flow-->op1
 ```
-```mermaid
-graph TB
-    subgraph g1[network to fold]
-        in1[InputData]
-        out1[OutputData]
-        int1(interface)
-        sc1(Schemas)
-        sc2(schemas)
-        in1--- sc1--- int1--- sc2 -->out1
-    end
-    in2[InputData]
-    out2[OutputData]
-    sc3(Schemas)
-    sc4(schemas)
-    subgraph g3[reference to the folded]
-        op1[new Operator]
-    end
-    sc1-.-sc3
-    sc2-.-sc4
-    in2--- sc3--- op1--- sc4-->out2
-```
-1. The new operator's access schema is the same with the schema
-of input data node in the network.
-2. The data flow pulled out of the input data node in the network
-is always main data flow no matter what the new operator receives.
-The process order is to process the network inside an operator then
-next operator.
-3. If a branch data flow is sent to the new operator,the flow
+Network can be referred as operator or interface node,
+depending on whether data modification exist.
+Once a network is loaded,
+you can create node refers to the network
+1. Network operator's input(output) interface is the same with the 
+network's input(output) data node's definition.
+2. The dataflow generated by input data node in network
+is always main dataflow no matter what the network operator receives.
+3. If a branch dataflow is sent to a network operator,the flow
 end,and the operator has no output.However,the output data node
-in the network is still make sense by acting as the starting 
-point for solving the dependency graph indicated by the network.
-4. If a main data flow is sent to the new operator,the operator
-generate a main data flow with schemas indicated by the output
-data node of the network.
-5. From this point of view,interface node is a kind of operator
-except that it can pass branch data flow on because it actually
-changes the data flow while keeps the data untouched.
-## Branch Data Flow:Template Programming
+in the network still makes sense by indicate the starting 
+point for solving the dependency graph.
+## Template Network
 When writing code,we can make a function that accept a function
 as its parameter and use it inside.Our network has no reason
 not to support such thoughtful idea.
 ```mermaid
 graph TB
-    op1[input operator]
     subgraph g1[network]
-        in[InputData]
-        out[OutputData]
+        in(input data)
+        out(output data)
         o1(( ))
-        op2[Operator A]
+        op2[Operator]
         o2(( ))
-        subgraph g2[reference to a folded]
-            op3[Operator B]
-        end
+        op3[Network Operator]
         in--- o1--- op2--- o2--- op3--main data flow-->out
-        o1 & o2--branch data flow-->o3(cluster)
-        op3--the input port of B-->o3
+        o1 & o2--branch dataflow-->o3(Operator)  
     end
-    o3==as an input port of the network==>op1
 ```
-The process in the network first execute the input node outside,
-then the operator A,then the input operator again,then B.And 
-During the process in B,the data flow branches somewhere inside B,
-out to the network,merged then out to input operator and execute 
-it once again.
+```mermaid
+graph TB
+    inp[input data]
+    op1[Operator]
+    subgraph g1[network]
+        in(input data)
+        out(output data)
+        o1(( ))
+        op2[Operator]
+        o2(( ))
+        op3[Network Operator]
+        in--- o1--- op2--- o2--- op3--main data flow-->out
+        o1 & o2--branch dataflow-->o3(generic)  
+    end
+    inp--node reference-->in
+    op3--refer to--->op1
+    o3--refer to-->op1
+```
+Operator or interface node can input multiple branch dataflows,
+the node have to perform same processing on each input.
+
+Use branch dataflow with combination of generic node gives
+a feature of template network.
 ## Cluster
-Seemingly merge multiple data flow into one,actually every data flow
-is still separated.When operator process one a data flow cluster,
-it process each data flow inside separately.
+Seemingly merge multiple dataflow into one,actually every dataflow
+is still separated.When node process on a dataflow cluster,
+they process each dataflow inside separately.
 
 Its usage is quite similar to the Task Operator Network or PDG
 in Houdini.The philosophy behind this is that operator should
-get its parameter from input data instead of attributes.And that's
-why there could be variable primitive in access schema.
+get its parameter from input data instead of attributes of the node.
+That's why there could be scalar data in schema.
 
-With different variable stored in data,a cluster is not processed
-uniformly.Combined with duplicate,it could be used
+With different scalar stored in data,a cluster is not processed
+uniformly.Combined with reform,it could be used
 to make varieties.
 ```mermaid
 graph TB
-in[InputData]
-out[OutputData]
-cl(cluster with duplication)
-op1[randomized based on data flow's order]
-op2[variation based on random data from its access schema]
-me(merge)
-in--- cl=== op1=== op2=== me-->out
+    in(input data)
+    out(output data)
+    cl(clusterized by duplication of one dataflow)
+    op1[randomized based on dataflow's order]
+    op2[varied based on random data]
+    me(reform)
+    in--dataflow--- cl==dataflow cluster=== op1==dataflow cluster=== 
+    op2==dataflow cluster=== me--dataflow-->out
  ```
-## Merge
-Merge actually merge multiple data flow into single one,union
-there access schemas,and create shape constrain.This is used
-when we add additional structure on something like bounding box
-or randomize value.
 ```mermaid
 graph TB
-    in1[InputData]
-    out1[OutputData]
-    o11(( ))
-    o12(( ))
-    nd1[NewData]
-    me1[merge]
-    op1[compute bounding box]
-    in1--schema of triangle--- o11--- me1--schema of triangle and bounding box-->out1
-    nd1--schema of bounding box--- o12--- me1
-    o12 & o11-->op1
-```
+    in(input data)
+    init1(init data)
+    init2(init data)
+    out(output data)
+    cl(clusterized by reform multiple dataflow)
+    op1[randomized based on dataflow's order]
+    op2[varied based on random data]
+    me(reform)
+    in & init1 & init2--dataflow--- cl==dataflow cluster=== op1==dataflow cluster=== 
+    op2==dataflow cluster=== me--dataflow-->out
+ ```
 ## Plugin
 In Elf,a project is a plugin.
 ### Directory Structure
@@ -353,7 +485,7 @@ In Elf,a project is a plugin.
     ```json
       {
         "dependency": [
-          {"git": "a valid git-link of the dependent plugin from where it will be download",}
+          {"git": "a valid git-url of the dependent plugin from where it will be download",}
         ],
         "version":[0,0,1],
         "name": "template",
