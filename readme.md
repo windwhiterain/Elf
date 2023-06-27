@@ -356,17 +356,14 @@ subgraph ou1[output dataflow]
     int6(interface C)
 end
 subgraph out2[output dataflow]
-    int7(interface B)
+    int7(interface A)
     int8(interface D)
 end
 rf(redistribute)
 int1 & int2 & int3 & int4 -->rf-->int5 & int6 & int7 & int8
 ```
-Interfaces redistribution can be used to merge,split,blend,exchange
-interfaces in multiple input dataflows.
-
-Each output dataflow is independent of others
-guaranteed by data duplication.
+Interfaces redistribution can be used to select,merge,split,blend
+,exchange,duplicate,interfaces in multiple input dataflows.
 ```mermaid
 graph TB
     subgraph Datas
@@ -395,6 +392,10 @@ graph TB
     r2---f1
     w2---f3
 ```
+One interface can be referred multiple times by multiple output 
+dataflow.Each output dataflow is independent of others
+guaranteed by data duplication.
+
 To figure out the way with minimum duplications of data,
 Elf will collect the following read and write on data port for each
 data flow.
