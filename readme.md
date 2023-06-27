@@ -13,7 +13,7 @@ catalogue:
 - [Application](#application)
 - [Network](#network)
   - [Basic Idea](#basic-idea)
-  - [Basic Node](#basic-nodes)
+  - [Basic Nodes](#basic-nodes)
   - [Dataflow](#dataflow)
   - [Interface](#interface)
   - [Schema](#schema)
