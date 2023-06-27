@@ -618,7 +618,7 @@ defined in the same plugin or its dependent plugin is available.
 ```
 ## Advantages Over The Node System Of Houdini
 1. Data are typed by schema.While houdini has no type system.
-2. Interface gives an convenient way for operator to
+2. Interface gives a convenient way for operator to
 process data in different schema.While houdini have to specify
 the way operator interpret the data, on operator itself.
 3. Duplication is minimized.While houdini have duplication on nealy 
