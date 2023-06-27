@@ -443,7 +443,8 @@ graph TB
     end
     o1--branch data flow-->op1
 ```
-Network can be referred as operator or interface node,
+Network can be referred as effect node,
+operator or interface node
 depending on whether data modification exist.
 Once a network is loaded,
 you can create node refers to the network
