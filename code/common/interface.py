@@ -1,9 +1,8 @@
-from code.common.structure import Structure
-from code.common.schema import Scheme
+from code.common.schema import Schema
 from typing import Union
 from code.common.structure import StructureList
-from code.common.network.node import Node
 from code.common.data import Data
+from code.common.context import Context
 
 class DataPort:
     __value:Union['DataPort',Data]
@@ -22,13 +21,33 @@ class DataPort:
     def end(self)->Data:
         assert self.is_end
         return self.__value
-    def get_end(self)->Data:
+    def find_end(self)->Data:
         data_port=self
         while not data_port.is_end:
             data_port=data_port.ref()
         return data_port.end()
-class Interface(Node):
-    def __init__(self,schema:Scheme):
+
+from code.common.network.effect_node import EffectNode
+class Interface(EffectNode):
+    def __init__(self, schema:Schema):
         super().__init__()
-        self.structure=schema.structure
-        self.data_ports=StructureList(schema.structure)
+        self.schema=schema
+        self.data_ports=StructureList[DataPort](schema.structure)
+    def generate_context(self)->Context:
+        return self.__generate_context(self.schema.structure)
+    def __generate_context(self, structure:Schema.Structure)->Context:
+        ret=structure.reference().get()()
+        for name,field in structure.name_fields():
+            if field.is_end:
+                value=self.data_ports[field.index()].find_end()
+            else:
+                value=self.__generate_context(field)
+            ret.__setattr__(name,value)
+        return ret
+
+
+
+
+
+
+

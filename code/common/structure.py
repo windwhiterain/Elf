@@ -1,5 +1,5 @@
 from typing import Union,Iterable,Generic,TypeVar,Any
-from code.common import Ref
+from code.help.help import Ref
 
 class StructureIndex:
     """
@@ -7,35 +7,43 @@ class StructureIndex:
     """
     def __init__(self,value:int):
         self.value=value
+EndRefType=TypeVar("EndRefType", bound=Any)
 RefType=TypeVar("RefType",bound=Any)
 
 
-
-class Structure(Generic[RefType]):
+class Structure(Generic[EndRefType,RefType]):
     """
     An nestable accesser to any data.
+
+    Attributes:
 
     The data varied in any structure is stored in end Structure's index pointing to a StructureList.
 
     The data keeps the same in every reference of the same Structure is stored in end Structure's ref.
 
-    RefType:the data type of ref.
+    Generic:
+
+    EndRefType:the data type of refs in the end structures.
+
+    RefType:the data type of refs in all structures
     """
     class EndInfor:
-        def __init__(self, index: StructureIndex, ref: Ref[RefType]):
+        def __init__(self, index: StructureIndex, ref: Ref[EndRefType]):
             self.index = index
             self.ref = ref
 
-    __fields:Union[dict[str, 'Structure'],EndInfor]
+    __fields:Union[dict[str, 'Structure[EndRefType,RefType]'],EndInfor]
+
+    __ref:Ref[RefType]
 
     is_end:bool
-    def construct(self,fields:dict[str,'Structure']=None):
+
+    def construct(self,fields:dict[str,'Structure[EndRefType,RefType]']=None,end_value:EndRefType=None,value:RefType=None):
         """
         Actually finish construct a structure.
         :param fields: structures as fields,None if this is the end structure.
         :return:
         """
-        from copy import deepcopy
         if fields is not None:
             for name,structure in fields.items():
                 fields[name]=structure.__ref_copy()
@@ -43,12 +51,13 @@ class Structure(Generic[RefType]):
             self.__fields=fields
         else:
             self.is_end=True
-            self.__fields=self.EndInfor(StructureIndex(0),Ref(None))
+            self.__fields=self.EndInfor(StructureIndex(0),Ref(end_value))
+        self.ref=Ref(value)
         self.count=0
         for end in self.ends():
             end.__fields.index = StructureIndex(self.count)
             self.count+=1
-    def ends(self)->Iterable['Structure']:
+    def ends(self)->Iterable['Structure[EndRefType,RefType]']:
         """
         Find all end structures.
         :return:
@@ -66,14 +75,20 @@ class Structure(Generic[RefType]):
         """
         assert self.is_end
         return self.__fields.index
-    def ref(self)->Ref[RefType]:
+    def end_reference(self)->Ref[EndRefType]:
         """
-        Get the Ref refers to the data.
+        Get the end ref refers to the data.
         :return:
         """
         assert self.is_end
         return self.__fields.ref
-    def field(self,field_name:str)->'Structure':
+    def reference(self)->Ref[RefType]:
+        """
+        Get the ref refers to the data.
+        :return:
+        """
+        return self.__ref
+    def field(self,field_name:str)->'Structure[EndRefType,RefType]':
         """
         Get a field of this Structure by field name.
         :param field_name: field name.
@@ -81,7 +96,7 @@ class Structure(Generic[RefType]):
         """
         assert not self.is_end
         return self.__fields[field_name]
-    def fields(self)->Iterable['Structure']:
+    def fields(self)->Iterable['Structure[EndRefType,RefType]']:
         """
         Get all fields of this Structure.
         :return:
@@ -89,9 +104,14 @@ class Structure(Generic[RefType]):
         assert not self.is_end
         for name,structure in self.__fields:
             yield structure
-    def __ref_copy(self)->'Structure'[RefType]:
+    def name_fields(self)->Iterable[tuple[str,'Structure[EndRefType,RefType]']]:
+        assert not self.is_end
+        for name, structure in self.__fields:
+            yield name,structure
+    def __ref_copy(self)->'Structure[EndRefType,RefType]':
         ret=Structure()
         ret.is_end = self.is_end
+        ret.__ref = self.__ref
         if self.is_end:
             ret.__fields=self.EndInfor(self.__fields.index,self.__fields.ref)
         else:
@@ -109,8 +129,11 @@ class StructureList(Generic[ValueType]):
         """
         :param structure: the Structure access this list.
         """
-        self.list=[None]*structure.count
+        self.list:list[ValueType]=[None]*structure.count
     def __getitem__(self, key:StructureIndex)->ValueType:
         return self.list[key.value]
     def __setitem__(self, key:StructureIndex, value:ValueType):
         self.list[key.value]=value
+    def indexs(self)->Iterable[StructureIndex]:
+        for i in range(len(self.list)):
+            yield StructureIndex(i)
