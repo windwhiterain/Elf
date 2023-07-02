@@ -1,10 +1,11 @@
-import taichi
-taichi=taichi
-schema=None
-operator=None
-class ShapeConstrain:
-    shape: tuple[int]
-    def __init__(self,*field):pass
-class Operator:pass
+import taichi as taichi
+from core.common import Executable as Operator
+from meta.operator_decorator import operator
+from meta.schema_decorator import schema
+from meta.constraint_decorator import ShapeConstrain,readonly
+
+
+
+
 
 

@@ -48,7 +48,7 @@ graph LR
         end
         pgld(network serializer)
     end
-    sm-->smc-->con[Context] & smd[Schema]
+    sm-->smc-->smd[Schema]
     op-->opc-->exe[Executable] & opd[Operator]
     pycope-->exe
     
@@ -56,8 +56,8 @@ graph LR
 ```
 - [meta](meta):python code that won't be executed,only import to elfscript
 for code hint.
-- [Schema](code/common/schema.py):the description of a schema.
-- executable:a python class that actually perform the data
+- [Schema](core/common/schema.py):the description of a schema.
+- [executable](core/common/executable.py):a python class that actually perform the data
 modification via context.
-- [Operator](code/common/operator_resource.py):the description of a operator.
-- context:the python object actually sent to executable. 
+- [Operator](core/common/operator_resource.py):the description of a operator.
+
