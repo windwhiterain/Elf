@@ -2,75 +2,145 @@ use std::{
     collections::HashMap,
     sync::{Arc, Weak},
 };
-pub struct Field {
+#[derive(Debug, Clone)]
+pub struct StructField {
     value: Weak<Structure>,
-    offset_N: i32,
-    offset_T: i32,
+    struct_offset: usize,
+    prim_offset: usize,
+    uniq_offset: usize,
 }
-pub struct NStruct {
-    fields: HashMap<String, Field>,
-    count_N: i32,
-    count_T: i32,
+#[derive(Debug, Clone)]
+pub struct PrimField {
+    prim_offset: usize,
+    uniq_offset: usize,
 }
-pub enum Structure {
-    T(()),
-    N(NStruct),
+#[derive(Debug)]
+pub struct Structure {
+    struct_fields: HashMap<String, StructField>,
+    prim_fields: HashMap<String, PrimField>,
+    pub struct_count: usize,
+    pub prim_count: usize,
 }
-impl NStruct {
-    fn new(fields: impl Iterator<Item = (String, Weak<Structure>)>) -> NStruct {
-        let mut offset_N = 1;
-        let mut offset_T = 0;
-        let mut fields_with_offset = HashMap::<String, Field>::new();
-        for (id, value_weak) in fields {
-            let value = value_weak.upgrade().unwrap();
-            fields_with_offset.insert(
-                id,
-                Field {
-                    value: value_weak,
-                    offset_N,
-                    offset_T,
-                },
-            );
-            offset_N += value.count_N();
-            offset_T += value.count_T();
-        }
-        NStruct {
-            fields: fields_with_offset,
-            count_N: offset_N,
-            count_T: offset_T,
+pub struct ConstructingStructure {
+    struct_fields: HashMap<String, StructField>,
+    prim_fields: HashMap<String, PrimField>,
+    pub struct_count: usize,
+    pub prim_count: usize,
+}
+impl Structure {
+    pub fn new() -> Structure {
+        Structure {
+            struct_fields: HashMap::new(),
+            prim_fields: HashMap::new(),
+            struct_count: 1,
+            prim_count: 0,
         }
     }
-    pub fn sub_struct(&self, id: String) -> Option<SubStruct> {
-        let field = self.fields.get(&id)?;
-        Some(SubStruct {
-            structure: field.value.clone(),
-            offset_T: field.offset_T,
-            offset_N: field.offset_N,
+    pub fn from(
+        struct_fields: impl Iterator<Item = (String, Weak<Structure>)>,
+        prim_fields: impl Iterator<Item = String>,
+    ) -> Structure {
+        let mut ret = Structure::new();
+        for (id, structure) in struct_fields {
+            ret.add_struct(id, structure)
+        }
+        for id in prim_fields {
+            ret.add_prim(id)
+        }
+        ret
+    }
+    pub fn add_struct(&mut self, id: String, structure: Weak<Structure>) {
+        let value = structure.upgrade().unwrap();
+        self.struct_fields.insert(
+            id,
+            StructField {
+                value: structure,
+                struct_offset: self.struct_count,
+                prim_offset: self.prim_count,
+                uniq_offset: self.uniq_struct_count(),
+            },
+        );
+        self.struct_count += value.struct_count;
+        self.prim_count += value.prim_count;
+    }
+    pub fn add_prim(&mut self, id: String) {
+        self.prim_fields.insert(
+            id,
+            PrimField {
+                prim_offset: self.prim_count,
+                uniq_offset: self.uniq_prim_count(),
+            },
+        );
+        self.prim_count += 1;
+    }
+    pub fn get_struct_field(&self, id: &String) -> Option<StructField> {
+        Some((*(self.struct_fields.get(id)?)).clone())
+    }
+    pub fn get_prim_field(&self, id: &String) -> Option<PrimField> {
+        Some((*(self.prim_fields.get(id)?)).clone())
+    }
+    pub fn get_struct(&self, id: &String) -> Option<Weak<Structure>> {
+        Some(self.struct_fields.get(id)?.value.clone())
+    }
+    pub fn get_prim(&self, id: &String) -> Option<usize> {
+        Some(self.prim_fields.get(id)?.prim_offset)
+    }
+    pub fn prim_offset(&self, id: &String) -> Option<usize> {
+        Some(self.prim_fields.get(id)?.prim_offset)
+    }
+    pub fn uniq_struct_offset(&self, id: &String) -> Option<usize> {
+        Some(self.struct_fields.get(id)?.uniq_offset)
+    }
+    pub fn uniq_prim_offset(&self, id: &String) -> Option<usize> {
+        Some(self.prim_fields.get(id)?.uniq_offset)
+    }
+    pub fn uniq_struct_count(&self) -> usize {
+        self.struct_fields.len().into()
+    }
+    pub fn uniq_prim_count(&self) -> usize {
+        self.prim_fields.len().into()
+    }
+}
+#[derive(Debug)]
+pub struct StructAccess {
+    structure: Weak<Structure>,
+    struct_offset: usize,
+    prim_offset: usize,
+}
+impl StructAccess {
+    pub fn new(structure: Weak<Structure>) -> StructAccess {
+        StructAccess {
+            structure,
+            struct_offset: 0,
+            prim_offset: 0,
+        }
+    }
+    pub fn struct_offset(&self) -> usize {
+        self.struct_offset
+    }
+    pub fn prim_offset(&self, id: &String) -> Option<usize> {
+        Some(self.structure.upgrade().unwrap().prim_offset(id)? + self.prim_offset)
+    }
+    pub fn access<'a>(&self, ids: impl Iterator<Item = &'a String>) -> Option<StructAccess> {
+        let mut struct_offset = self.struct_offset;
+        let mut prim_offset = self.prim_offset;
+        let mut cur = self.structure.clone();
+        for id in ids {
+            let value = cur.upgrade().unwrap();
+            let field = value.get_struct_field(id)?;
+            struct_offset += field.struct_offset;
+            prim_offset += field.prim_offset;
+            cur = field.value;
+        }
+        Some(StructAccess {
+            structure: cur,
+            struct_offset,
+            prim_offset,
         })
     }
 }
-impl Structure {
-    pub fn new_T() -> Structure {
-        Structure::T(())
+impl From<Weak<Structure>> for StructAccess {
+    fn from(structure: Weak<Structure>) -> Self {
+        StructAccess::new(structure)
     }
-    pub fn new_N(fields: impl Iterator<Item = (String, Weak<Structure>)>) -> Structure {
-        Structure::N(NStruct::new(fields))
-    }
-    pub fn count_N(&self) -> i32 {
-        match self {
-            Structure::N(n) => n.count_N,
-            Structure::T(t) => 0,
-        }
-    }
-    pub fn count_T(&self) -> i32 {
-        match self {
-            Structure::N(n) => n.count_T,
-            Structure::T(t) => 1,
-        }
-    }
-}
-pub struct SubStruct {
-    structure: Weak<Structure>,
-    offset_T: i32,
-    offset_N: i32,
 }

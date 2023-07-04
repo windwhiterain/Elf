@@ -1,1 +1,0 @@
-C:\SoftWare\PyCharm\Projects\Elf\core\py_rust\main\target\debug\main.exe: C:\SoftWare\PyCharm\Projects\Elf\core\py_rust\main\src\bin\main.rs C:\SoftWare\PyCharm\Projects\Elf\core\py_rust\main\src\common\mod.rs C:\SoftWare\PyCharm\Projects\Elf\core\py_rust\main\src\common\structure.rs C:\SoftWare\PyCharm\Projects\Elf\core\py_rust\main\src\lib.rs
