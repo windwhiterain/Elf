@@ -1,2 +1,4 @@
 use main::*;
-fn main() {}
+fn main() {
+    ui::transform_schema();
+}
