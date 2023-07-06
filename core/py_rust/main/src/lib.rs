@@ -1,6 +1,6 @@
 pub mod common;
 pub mod help;
-pub mod ui;
+pub mod python;
 use std::{collections::HashMap, iter, rc::Weak, sync::Arc};
 
 use common::*;
