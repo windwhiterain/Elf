@@ -56,8 +56,8 @@ graph LR
 ```
 - [meta](meta):python code that won't be executed,only import to elfscript
 for code hint.
-- [Schema](core/common/schema.py):the description of a schema.
-- [executable](core/common/executable.py):a python class that actually perform the data
+- [Schema](core/core_py/common/schema.py):the description of a schema.
+- [executable](core/core_py/common/executable.py):a python class that actually perform the data
 modification via context.
-- [Operator](core/common/operator_resource.py):the description of a operator.
+- [Operator](core/core_py/common/operator_resource.py):the description of a operator.
 

@@ -1,1 +1,0 @@
-from core.elfscript_compiler.schema_compiler import compile_schema
