@@ -1,15 +1,17 @@
 import sys
 from PySide6 import QtWidgets
+from ui.widgets import schema_tree
 from ui.widgets.schema_tree import SchemaTree
 from ui.palette import default
+import elf_py
 
 
-schema_tree_color=SchemaTree.ColorSheet(default.white, default.black,[default.red,default.blue,default.yellow])
-n1=SchemaTree.Node("1",[],0)
-n2=SchemaTree.Node("2",[],1)
-n11=SchemaTree.Node("2",[n1,n2],2)
-n12=SchemaTree.Node("2",[],2)
-root=SchemaTree.Node("2",[n11,n12],2)
+
+schema_tree_color=schema_tree.ColorSheet(default.white, default.black,[default.red,default.blue,default.yellow])
+context=elf_py.Context()
+context.init()
+root=elf_py.ui.schema_tree.get_current_node(context)
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()

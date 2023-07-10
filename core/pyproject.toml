@@ -3,4 +3,4 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [tool.maturin]
-module-name = "my_project._lib_name"
+module-name = "elf.elf_py"

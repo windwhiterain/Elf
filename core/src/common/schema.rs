@@ -10,10 +10,10 @@ use crate::help::*;
 use crate::structure::*;
 #[derive(Debug)]
 pub struct Schema {
-    structure: Arc<Structure>,
-    data_descriptors: Vec<DataDescriptor>,
-    shape_constraint_refs: Vec<Option<Arc<ShapeConstraint>>>,
-    shape_constraint_maps: Vec<HashMap<String, Arc<ShapeConstraint>>>,
+    pub structure: Arc<Structure>,
+    pub data_descriptors: Vec<DataDescriptor>,
+    pub shape_constraint_refs: Vec<Option<Arc<ShapeConstraint>>>,
+    pub shape_constraint_maps: Vec<HashMap<String, Arc<ShapeConstraint>>>,
 }
 impl Schema {
     pub fn new<'a>(
@@ -73,7 +73,7 @@ impl Schema {
         constraints: Vec<&Arc<ShapeConstraint>>,
         prim_offsets: Vec<usize>,
     ) {
-        let access = StructAccess::new(Arc::<Structure>::downgrade(&self.structure));
+        let access: StructAccess = self.structure.clone().into();
         let self_map = &mut self.shape_constraint_maps[access.struct_offset()];
         let a_constraint = constraints.iter().next();
         let new_constraint = match a_constraint {
@@ -106,7 +106,7 @@ impl Schema {
         &mut self,
         new_constraints: impl Iterator<Item = (String, Vec<&'a Arc<ShapeConstraint>>, Vec<usize>)>,
     ) {
-        let access = StructAccess::new(Arc::<Structure>::downgrade(&self.structure));
+        let access: StructAccess = self.structure.clone().into();
         let self_map = &mut self.shape_constraint_maps[access.struct_offset()];
         for (id, constraints, offsets) in new_constraints {
             self.add_shape_constraint(id, constraints, offsets);
@@ -117,17 +117,17 @@ impl Schema {
         ids: impl Iterator<Item = &'a String>,
         constraint_id: &String,
     ) -> Option<&Arc<ShapeConstraint>> {
-        let root = StructAccess::new(Arc::<Structure>::downgrade(&self.structure));
+        let root: StructAccess = self.structure.clone().into();
         let end = root.access(ids);
         self.shape_constraint_maps[end?.struct_offset()].get(constraint_id)
     }
-    pub fn debug_refs(&self) -> String {
+    pub fn gen_shape_constraint_ids(&self) -> Vec<i32> {
         let mut class = HashMap::new();
         let mut class_count = -1;
-        let mut ret = "[".to_string();
+        let mut ret = vec![];
         for ref_op in &self.shape_constraint_refs {
             let add = match ref_op {
-                None => String::from("_"),
+                None => -1,
                 Some(ref_) => {
                     let class_id = if !class.contains_key(&ptr(ref_)) {
                         class_count += 1;
@@ -136,13 +136,11 @@ impl Schema {
                     } else {
                         class[&ptr(ref_)]
                     };
-                    format!("{class_id}")
+                    class_id
                 }
             };
-            ret += &add;
-            ret += " ";
+            ret.push(add)
         }
-        ret += "]";
         ret
     }
 }

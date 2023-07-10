@@ -1,69 +1,69 @@
 from ui.widgets.color_block import *
 from PySide6 import QtWidgets,QtGui
 from ui.help import *
+import elf_py
 import math
+Node=elf_py.ui.schema_tree.Node
+
+
+def cal_y(self:Node, y: float):
+    self.y = y
+    for child in self.childs:
+        cal_y(child,y + SchemaTree.interval_y + SchemaTree.node_h)
+
+def cal_w(self:Node):
+    self.w-=SchemaTree.interval_x
+    for child in self.childs:
+        self.w +=SchemaTree.interval_x
+        cal_w(child)
+        self.w+=child.w
+    if self.w<SchemaTree.node_w:
+        self.w=SchemaTree.node_w
+def cal_x(self:Node,x:float):
+    self.x=x
+    c_x=self.x-self.w/2
+    for child in self.childs:
+        c_x+=child.w/2
+        cal_x(child,c_x)
+        c_x+=child.w/2
+        c_x+=SchemaTree.interval_x
+def iter(self:Node)->Iterable[Node]:
+    yield self
+    for child in self.childs:
+        for ret in iter(child):
+            yield ret
+def cal_edge(self:Node)->tuple[float,float,float,float]:
+    min_x,min_y,max_x,max_y=math.inf,math.inf,-math.inf,-math.inf
+    for node in iter(self):
+        if node.x>max_x:max_x=node.x
+        if node.x<min_x:min_x=node.x
+        if node.y>max_y:max_y=node.y
+        if node.y<min_y:min_y=node.y
+    min_x-=SchemaTree.node_w/2
+    max_x+=SchemaTree.node_w/2
+    min_y-=SchemaTree.node_h/2
+    max_y+=SchemaTree.node_h/2
+    return (min_x,min_y,max_x,max_y)
+
+def offset_to_z(self:Node) -> tuple[float, float]:
+    min_x, min_y, max_x, max_y = cal_edge(self)
+    for node in iter(self):
+        node.x -= min_x
+        node.y -= min_y
+    return max_x - min_x, max_y - min_y
+class ColorSheet:
+    def __init__(self, bg: Color, line: Color, shape_constraints: list[Color]):
+        self.bg = ColorLink(bg)
+        self.line = ColorLink(line)
+        self.shape_constraints = [ColorLink(color) for color in shape_constraints]
 class SchemaTree(QtWidgets.QLabel):
     interval_x=1.0
     interval_y=0.3
     node_w=2.0
     node_h=0.5
-    class ColorSheet:
-        def __init__(self,bg:Color,line:Color,shape_constraints:list[Color]):
-            self.bg=ColorLink(bg)
-            self.line=ColorLink(line)
-            self.shape_constraints=[ColorLink(color) for color in shape_constraints]
-    class Node:
-        def __init__(self,name:str,childs:list['SchemaTree.Node'],sc_id:int):
-            self.x,self.y,self.w=0.0,0.0,0.0
-            self.name=name
-            self.childs=childs
-            self.sc_id=sc_id
-        def cal_y(self,y:float):
-            self.y=y
-            for child in self.childs:
-                child.cal_y(y+SchemaTree.interval_y+SchemaTree.node_h)
-        def cal_w(self):
-            self.w-=SchemaTree.interval_x
-            for child in self.childs:
-                self.w +=SchemaTree.interval_x
-                child.cal_w()
-                self.w+=child.w
-            if self.w<SchemaTree.node_w:
-                self.w=SchemaTree.node_w
-        def cal_x(self,x:float):
-            self.x=x
-            c_x=self.x-self.w/2
-            for child in self.childs:
-                c_x+=child.w/2
-                child.cal_x(c_x)
-                c_x+=child.w/2
-                c_x+=SchemaTree.interval_x
-        def iter(self)->Iterable['SchemaTree.Node']:
-            yield self
-            for child in self.childs:
-                for ret in child.iter():
-                    yield ret
-        def cal_edge(self)->tuple[float,float,float,float]:
-            min_x,min_y,max_x,max_y=math.inf,math.inf,-math.inf,-math.inf
-            for node in self.iter():
-                if node.x>max_x:max_x=node.x
-                if node.x<min_x:min_x=node.x
-                if node.y>max_y:max_y=node.y
-                if node.y<min_y:min_y=node.y
-            min_x-=SchemaTree.node_w/2
-            max_x+=SchemaTree.node_w/2
-            min_y-=SchemaTree.node_h/2
-            max_y+=SchemaTree.node_h/2
-            return (min_x,min_y,max_x,max_y)
-        def offset_to_z(self)->tuple[float,float]:
-            min_x, min_y, max_x, max_y=self.cal_edge()
-            for node in self.iter():
-                node.x-=min_x
-                node.y-=min_y
-            return max_x-min_x,max_y-min_y
-    def __init__(self,color_sheet:'SchemaTree.ColorSheet'):
+    def __init__(self,color_sheet:ColorSheet):
         super().__init__()
-        self.root:Optional['SchemaTree.Node']=None
+        self.root:Optional[Node]=None
         self.w,self.h=0.0,0.0
         self.color_sheet = color_sheet
 
@@ -83,7 +83,7 @@ class SchemaTree(QtWidgets.QLabel):
         canvas = QtGui.QPixmap(w,h)
         canvas.fill(self.color_sheet.bg.get())
         painter = QtGui.QPainter(canvas)
-        for node in self.root.iter():
+        for node in iter(self.root):
             label=QtWidgets.QLabel()
             label.setParent(self)
             label.setText(node.name)
@@ -110,10 +110,11 @@ class SchemaTree(QtWidgets.QLabel):
         self.setPixmap(canvas)
     def set_schema(self,root:Node):
         self.root=root
-        root.cal_y(0)
-        root.cal_w()
-        root.cal_x(0)
-        self.w,self.h=root.offset_to_z()
+        cal_y(root,1)
+        cal_w(root)
+        cal_x(root,0)
+
+        self.w,self.h=offset_to_z(root)
         self.h+=SchemaTree.node_h+SchemaTree.interval_y
         self.scale(50)
         self.paint_schema()

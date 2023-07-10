@@ -11,8 +11,8 @@ pub struct StructField {
 }
 #[derive(Debug, Clone)]
 pub struct PrimField {
-    prim_offset: usize,
-    uniq_offset: usize,
+    pub prim_offset: usize,
+    pub uniq_offset: usize,
 }
 #[derive(Debug)]
 pub struct Structure {
@@ -103,12 +103,12 @@ impl Structure {
 }
 #[derive(Debug)]
 pub struct StructAccess {
-    structure: Weak<Structure>,
+    structure: Arc<Structure>,
     struct_offset: usize,
     prim_offset: usize,
 }
 impl StructAccess {
-    pub fn new(structure: Weak<Structure>) -> StructAccess {
+    pub fn new(structure: Arc<Structure>) -> StructAccess {
         StructAccess {
             structure,
             struct_offset: 0,
@@ -119,18 +119,24 @@ impl StructAccess {
         self.struct_offset
     }
     pub fn prim_offset(&self, id: &String) -> Option<usize> {
-        Some(self.structure.upgrade().unwrap().prim_offset(id)? + self.prim_offset)
+        Some(self.structure.prim_offset(id)? + self.prim_offset)
+    }
+    pub fn access_field(&self, field: &StructField) -> StructAccess {
+        StructAccess {
+            structure: field.value.upgrade().unwrap().clone(),
+            struct_offset: self.struct_offset + field.struct_offset,
+            prim_offset: self.prim_offset + field.prim_offset,
+        }
     }
     pub fn access<'a>(&self, ids: impl Iterator<Item = &'a String>) -> Option<StructAccess> {
         let mut struct_offset = self.struct_offset;
         let mut prim_offset = self.prim_offset;
         let mut cur = self.structure.clone();
         for id in ids {
-            let value = cur.upgrade().unwrap();
-            let field = value.get_struct_field(id)?;
+            let field = cur.get_struct_field(id)?;
             struct_offset += field.struct_offset;
             prim_offset += field.prim_offset;
-            cur = field.value;
+            cur = field.value.upgrade().unwrap().clone();
         }
         Some(StructAccess {
             structure: cur,
@@ -138,9 +144,18 @@ impl StructAccess {
             prim_offset,
         })
     }
+    pub fn subs(&self) -> impl Iterator<Item = (&String, StructAccess)> + '_ {
+        self.structure
+            .struct_fields
+            .iter()
+            .map(|(id, field)| (id, self.access_field(field)))
+    }
+    pub fn prims(&self) -> impl Iterator<Item = (&String, &PrimField)> {
+        self.structure.prim_fields.iter()
+    }
 }
-impl From<Weak<Structure>> for StructAccess {
-    fn from(structure: Weak<Structure>) -> Self {
+impl From<Arc<Structure>> for StructAccess {
+    fn from(structure: Arc<Structure>) -> Self {
         StructAccess::new(structure)
     }
 }
