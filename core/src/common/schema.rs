@@ -11,8 +11,11 @@ use crate::structure::*;
 #[derive(Debug)]
 pub struct Schema {
     pub structure: Arc<Structure>,
+    ///Referenced by prim offset
     pub data_descriptors: Vec<DataDescriptor>,
+    ///Referenced by prim offset
     pub shape_constraint_refs: Vec<Option<Arc<ShapeConstraint>>>,
+    ///Referenced by struct offset
     pub shape_constraint_maps: Vec<HashMap<String, Arc<ShapeConstraint>>>,
 }
 impl Schema {
@@ -121,6 +124,7 @@ impl Schema {
         let end = root.access(ids);
         self.shape_constraint_maps[end?.struct_offset()].get(constraint_id)
     }
+    ///Give each different constraints an unique i32,referenced by prim offset,used for ui or debug
     pub fn gen_shape_constraint_ids(&self) -> Vec<i32> {
         let mut class = HashMap::new();
         let mut class_count = -1;
