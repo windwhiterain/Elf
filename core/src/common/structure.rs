@@ -101,11 +101,13 @@ impl Structure {
         self.prim_fields.len().into()
     }
 }
+///Use this to access structure's data,this struct associated with a sub structure in a real structure
 #[derive(Debug)]
 pub struct StructAccess {
     structure: Arc<Structure>,
     struct_offset: usize,
     prim_offset: usize,
+    uniq_offset: usize,
 }
 impl StructAccess {
     pub fn new(structure: Arc<Structure>) -> StructAccess {
@@ -113,45 +115,65 @@ impl StructAccess {
             structure,
             struct_offset: 0,
             prim_offset: 0,
+            uniq_offset: 0,
         }
     }
     pub fn struct_offset(&self) -> usize {
         self.struct_offset
     }
+    ///Get from the primitive field of the current sub structure by field name
     pub fn prim_offset(&self, id: &String) -> Option<usize> {
         Some(self.structure.prim_offset(id)? + self.prim_offset)
     }
-    pub fn access_field(&self, field: &StructField) -> StructAccess {
+    ///Get a sub accessor by the struct field of current sub structure
+    pub fn access_by_struct_field(&self, field: &StructField) -> StructAccess {
         StructAccess {
             structure: field.value.upgrade().unwrap().clone(),
             struct_offset: self.struct_offset + field.struct_offset,
             prim_offset: self.prim_offset + field.prim_offset,
+            uniq_offset: self.uniq_offset + field.uniq_offset,
         }
     }
+    ///Get a offseted prim field by the prim field of current sub structure
+    pub fn access_by_prim_field(&self, field: &PrimField) -> PrimField {
+        PrimField {
+            prim_offset: self.prim_offset + field.prim_offset,
+            uniq_offset: self.uniq_offset + field.uniq_offset,
+        }
+    }
+    ///Get a sub accessor by a name path to it,from the current sub structure
     pub fn access<'a>(&self, ids: impl Iterator<Item = &'a String>) -> Option<StructAccess> {
         let mut struct_offset = self.struct_offset;
         let mut prim_offset = self.prim_offset;
+        let mut uniq_offset = self.uniq_offset;
         let mut cur = self.structure.clone();
         for id in ids {
             let field = cur.get_struct_field(id)?;
             struct_offset += field.struct_offset;
             prim_offset += field.prim_offset;
+            uniq_offset += field.uniq_offset;
             cur = field.value.upgrade().unwrap().clone();
         }
         Some(StructAccess {
             structure: cur,
             struct_offset,
             prim_offset,
+            uniq_offset,
         })
     }
+    ///Get all sub struture from current sub structure's struct fields
     pub fn subs(&self) -> impl Iterator<Item = (&String, StructAccess)> + '_ {
         self.structure
             .struct_fields
             .iter()
-            .map(|(id, field)| (id, self.access_field(field)))
+            .map(|(id, field)| (id, self.access_by_struct_field(field)))
     }
-    pub fn prims(&self) -> impl Iterator<Item = (&String, &PrimField)> {
-        self.structure.prim_fields.iter()
+    ///Get all sub struture from current sub structure's struct fields
+    pub fn prims(&self) -> impl Iterator<Item = (&String, PrimField)> {
+        self.structure
+            .prim_fields
+            .iter()
+            .map(|(id, field)| (id, self.access_by_prim_field(field)))
     }
 }
 impl From<Arc<Structure>> for StructAccess {

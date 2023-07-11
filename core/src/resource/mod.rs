@@ -1,4 +1,5 @@
 use crate::*;
+///The only one context to manage resources in an elf applycation
 pub struct Context {
     pub schemas: Resources<Schema>,
 }
@@ -9,6 +10,7 @@ impl Context {
         }
     }
 }
+///a wraper on raw rust struct that should be a resource load from plugin
 pub struct Resource<T> {
     pub value: T,
     pub name: String,
@@ -18,6 +20,7 @@ impl<T> Resource<T> {
         Resource { value, name }
     }
 }
+///Store a type of resources
 pub struct Resources<T> {
     pub id_map: Vec<Option<Arc<Resource<T>>>>,
 }

@@ -7,9 +7,12 @@ use pyo3::prelude::*;
 use std::{collections::HashMap, iter, sync::Arc, sync::Weak};
 
 use common::*;
+///The only context for an elf applycation
 #[pyclass(unsendable)]
 pub struct Context {
+    ///
     pub resource: resource::Context,
+    ///temp
     pub current_schema: usize,
 }
 
@@ -19,9 +22,10 @@ impl Context {
     pub fn new() -> Context {
         Context {
             resource: resource::Context::new(),
-            current_schema: 0, //temperate field for testing
+            current_schema: 0,
         }
     }
+    ///temp
     #[pyo3(signature = ())]
     pub fn init(&mut self) {
         let mut ray = Schema::new(
