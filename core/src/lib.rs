@@ -10,7 +10,7 @@ use common::*;
 ///The only context for an elf applycation
 #[pyclass(unsendable)]
 pub struct Context {
-    ///
+    ///resource context
     pub resource: resource::Context,
     ///temp
     pub current_schema: usize,
@@ -60,7 +60,7 @@ impl Context {
             .unwrap()
             .clone();
 
-        light.add_shape_constraint("sc1".into(), [&sc1, &sc2].into(), [5].into());
+        light.add_shape_constraint("sc1".into(), [&sc1, &sc2].into(), [].into());
         self.resource
             .schemas
             .add(Arc::from(resource::Resource::new("ray".into(), ray)));

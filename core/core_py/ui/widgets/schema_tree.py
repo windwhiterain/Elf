@@ -3,9 +3,14 @@ from PySide6 import QtWidgets,QtGui
 from ui.help import *
 import elf_py
 import math
-Node=elf_py.ui.schema_tree.Node
+RustNode=elf_py.ui.schema_tree.Node
 
-
+class Node:
+    def __init__(self,rust_node:RustNode):
+        self.x,self.y,self.w=0.0,0.0,0.0
+        self.name:str=rust_node.name
+        self.childs:list[Node]=[Node(r_node) for r_node in rust_node.childs]
+        self.sc_id=rust_node.sc_id
 def cal_y(self:Node, y: float):
     self.y = y
     for child in self.childs:
@@ -108,7 +113,8 @@ class SchemaTree(QtWidgets.QLabel):
                 set_geo(label,(x1,y_end),(h,h))
         painter.end()
         self.setPixmap(canvas)
-    def set_schema(self,root:Node):
+    def set_schema(self,rust_root:RustNode):
+        root=Node(rust_root)
         self.root=root
         cal_y(root,1)
         cal_w(root)

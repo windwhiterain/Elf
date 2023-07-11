@@ -1,12 +1,17 @@
-use std::{string, sync::Arc};
+use std::{
+    cell::{Cell, RefCell},
+    fmt::Debug,
+    string,
+    sync::{Arc, RwLock},
+};
 
-use pyo3::prelude::*;
+use pyo3::{prelude::*, types::PyList};
 
 use crate::{
     common::{structure::StructAccess, Schema},
     resource, Context,
 };
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[pyclass]
 pub struct Node {
     #[pyo3(get, set)]
@@ -17,22 +22,10 @@ pub struct Node {
     pub w: f32,
     #[pyo3(get)]
     pub name: String,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     pub childs: Vec<Node>,
     #[pyo3(get)]
     pub sc_id: i32,
-}
-impl Clone for Node {
-    fn clone(&self) -> Self {
-        Node {
-            x: self.x,
-            y: self.y,
-            w: self.w,
-            name: self.name.clone(),
-            childs: self.childs.clone(),
-            sc_id: self.sc_id,
-        }
-    }
 }
 #[pyfunction]
 pub fn get_current_node(context: &Context) -> Node {
