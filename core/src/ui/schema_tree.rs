@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 
 use crate::{
     common::{structure::StructAccess, Schema},
-    Context,
+    resource, Context,
 };
 #[derive(Debug)]
 #[pyclass]
@@ -36,12 +36,18 @@ impl Clone for Node {
 }
 #[pyfunction]
 pub fn get_current_node(context: &Context) -> Node {
-    let schema = &context.resources.schemas[&context.current_schema].value;
+    let resource = &context
+        .resource
+        .schemas
+        .get(context.current_schema)
+        .unwrap()
+        .clone();
+    let schema = &resource.value;
     let access: StructAccess = schema.structure.clone().into();
     get_node(
         schema,
         &schema.gen_shape_constraint_ids(),
-        context.current_schema.clone(),
+        resource.name.clone(),
         &access,
     )
 }

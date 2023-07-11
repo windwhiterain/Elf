@@ -1,6 +1,7 @@
 pub mod common;
 pub mod help;
 pub mod python;
+pub mod resource;
 pub mod ui;
 use pyo3::prelude::*;
 use std::{collections::HashMap, iter, sync::Arc, sync::Weak};
@@ -8,36 +9,17 @@ use std::{collections::HashMap, iter, sync::Arc, sync::Weak};
 use common::*;
 #[pyclass(unsendable)]
 pub struct Context {
-    pub resources: Resources,
-    pub current_schema: String,
+    pub resource: resource::Context,
+    pub current_schema: usize,
 }
-pub struct Resource<T> {
-    pub value: T,
-}
-impl<T> Resource<T> {
-    pub fn new(value: T) -> Resource<T> {
-        Resource { value }
-    }
-}
-pub struct Resources {
-    pub schemas: HashMap<String, Arc<Resource<Schema>>>,
-}
-impl Resources {
-    pub fn new() -> Resources {
-        {
-            Resources {
-                schemas: HashMap::new(),
-            }
-        }
-    }
-}
+
 #[pymethods]
 impl Context {
     #[new]
     pub fn new() -> Context {
         Context {
-            resources: Resources::new(),
-            current_schema: String::new(),
+            resource: resource::Context::new(),
+            current_schema: 0, //temperate field for testing
         }
     }
     #[pyo3(signature = ())]
@@ -75,16 +57,16 @@ impl Context {
             .clone();
 
         light.add_shape_constraint("sc1".into(), [&sc1, &sc2].into(), [5].into());
-        self.resources
+        self.resource
             .schemas
-            .insert("ray".into(), Arc::from(Resource::new(ray)));
-        self.resources
+            .add(Arc::from(resource::Resource::new("ray".into(), ray)));
+        self.resource
             .schemas
-            .insert("dens".into(), Arc::from(Resource::new(dens)));
-        self.resources
+            .add(Arc::from(resource::Resource::new("dens".into(), dens)));
+        self.current_schema = self
+            .resource
             .schemas
-            .insert("light".into(), Arc::from(Resource::new(light)));
-        self.current_schema = String::from("light");
+            .add(Arc::from(resource::Resource::new("light".into(), light)));
     }
 }
 #[pymodule]
