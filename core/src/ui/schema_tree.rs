@@ -27,24 +27,17 @@ pub struct Node {
     #[pyo3(get)]
     pub sc_id: i32,
 }
-#[pyfunction]
-pub fn get_current_node(context: &Context) -> Node {
-    let resource = &context
-        .resource
-        .schemas
-        .get(context.current_schema)
-        .unwrap()
-        .clone();
+pub fn get_node(resource: &resource::Resource<Schema>) -> Node {
     let schema = &resource.value;
     let access: StructAccess = schema.structure.clone().into();
-    get_node(
+    _get_node(
         schema,
         &schema.gen_shape_constraint_ids(),
         resource.name.clone(),
         &access,
     )
 }
-fn get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAccess) -> Node {
+fn _get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAccess) -> Node {
     let mut childs = access
         .prims()
         .map(|(id, field)| Node {
@@ -58,7 +51,7 @@ fn get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAcces
         .collect::<Vec<Node>>();
     let mut subs = access
         .subs()
-        .map(|(id, access)| get_node(schema, sc_ids, id.clone(), &access))
+        .map(|(id, access)| _get_node(schema, sc_ids, id.clone(), &access))
         .collect::<Vec<Node>>();
     childs.append(&mut subs);
     Node {
@@ -73,7 +66,6 @@ fn get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAcces
 pub fn gen_module(py: Python, m: &PyModule) -> PyResult<()> {
     let sub_m = PyModule::new(py, "schema_tree")?;
     sub_m.add_class::<Node>()?;
-    sub_m.add_function(wrap_pyfunction!(get_current_node, m)?)?;
     m.add_submodule(sub_m)?;
     Ok(())
 }

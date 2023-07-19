@@ -2,9 +2,11 @@ pub mod common;
 pub mod help;
 pub mod python;
 pub mod resource;
+mod starter;
 pub mod ui;
+pub mod ui_debug;
 use pyo3::prelude::*;
-use std::{collections::HashMap, iter, sync::Arc, sync::Weak};
+use std::{collections::HashMap, iter, path::PathBuf, sync::Arc, sync::Weak};
 
 use common::*;
 ///The only context for an elf applycation
@@ -12,17 +14,17 @@ use common::*;
 pub struct Context {
     ///resource context
     pub resource: resource::Context,
-    ///temp
-    pub current_schema: usize,
+    ///python interpreter
+    pub py_context: python::Context,
 }
 
 #[pymethods]
 impl Context {
     #[new]
-    pub fn new() -> Context {
+    pub fn new(py_context: python::Context) -> Context {
         Context {
             resource: resource::Context::new(),
-            current_schema: 0,
+            py_context,
         }
     }
     ///temp
@@ -67,10 +69,9 @@ impl Context {
         self.resource
             .schemas
             .add(Arc::from(resource::Resource::new("dens".into(), dens)));
-        self.current_schema = self
-            .resource
-            .schemas
-            .add(Arc::from(resource::Resource::new("light".into(), light)));
+        let arc_light = Arc::from(resource::Resource::new("light".into(), light));
+        ui_debug::show_schema(&arc_light, self);
+        self.resource.schemas.add(arc_light);
     }
 }
 #[pymodule]
@@ -78,14 +79,6 @@ impl Context {
 fn gen_module(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Context>()?;
     ui::gen_module(py, m)?;
+    python::gen_module(py, m)?;
     Ok(())
-}
-#[test]
-fn test() {
-    let mut context = Context::new();
-    context.init();
-    let root = ui::schema_tree::get_current_node(&context);
-    for child in &root.childs {
-        println!("{:?}", child)
-    }
 }
