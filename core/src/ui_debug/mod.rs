@@ -1,3 +1,5 @@
+//!All implmentation for some important elf struct to display in isolated ui window
+
 use crate::{hashmap, ui::schema_tree};
 use std::{
     collections::HashMap,
