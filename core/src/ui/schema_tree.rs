@@ -11,6 +11,8 @@ use crate::{
     common::{structure::StructAccess, Schema},
     resource, Context,
 };
+
+use super::UIInfor;
 #[derive(Debug, Clone)]
 #[pyclass]
 pub struct Node {
@@ -27,15 +29,16 @@ pub struct Node {
     #[pyo3(get)]
     pub sc_id: i32,
 }
-pub fn get_node(resource: &resource::Resource<Schema>) -> Node {
-    let schema = &resource.value;
-    let access: StructAccess = schema.structure.clone().into();
-    _get_node(
-        schema,
-        &schema.gen_shape_constraint_ids(),
-        resource.name.clone(),
-        &access,
-    )
+impl UIInfor<Node> for resource::Resource<Schema> {
+    fn gen_infor(&self) -> Node {
+        let access: StructAccess = self.value.structure.clone().into();
+        _get_node(
+            &self.value,
+            &self.value.gen_shape_constraint_ids(),
+            self.name.clone(),
+            &access,
+        )
+    }
 }
 fn _get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAccess) -> Node {
     let mut childs = access

@@ -6,3 +6,8 @@ pub fn gen_module(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_submodule(sub_m)?;
     Ok(())
 }
+///The backend independent description of an ui used for display and collect user input
+pub trait UIInfor<T> {
+    ///Get the backend independent description of an ui
+    fn gen_infor(&self) -> T;
+}

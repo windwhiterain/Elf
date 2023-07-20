@@ -7,6 +7,7 @@ pub mod ui;
 pub mod ui_debug;
 use pyo3::prelude::*;
 use std::{collections::HashMap, iter, path::PathBuf, sync::Arc, sync::Weak};
+use ui_debug::UIDebug;
 
 use common::*;
 ///The only context for an elf applycation
@@ -70,7 +71,7 @@ impl Context {
             .schemas
             .add(Arc::from(resource::Resource::new("dens".into(), dens)));
         let arc_light = Arc::from(resource::Resource::new("light".into(), light));
-        ui_debug::show_schema(&arc_light, self);
+        arc_light.display(self);
         self.resource.schemas.add(arc_light);
     }
 }
