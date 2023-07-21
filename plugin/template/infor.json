@@ -1,7 +1,0 @@
-{
-  "dependency": [
-    {"URL": "a valid URL of another plugin"}
-  ],
-  "version":[0,0,1],
-  "description": "template plugin for instruction"
-}

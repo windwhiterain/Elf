@@ -43,7 +43,8 @@ impl Schema {
                                 match v {
                                     None => continue,
                                     Some(v) => {
-                                        if eq(constraint, v) {
+                                        if constraint.as_ref().get_const_ptr() == v.get_const_ptr()
+                                        {
                                             refs_t[k] = Some(new_constraint.clone());
                                         }
                                     }
@@ -73,18 +74,18 @@ impl Schema {
     pub fn add_shape_constraint(
         &mut self,
         id: String,
-        constraints: Vec<&Arc<ShapeConstraint>>,
+        constraints: Vec<Arc<ShapeConstraint>>,
         prim_offsets: Vec<usize>,
     ) {
-        let access: StructAccess = self.structure.clone().into();
-        let self_map = &mut self.shape_constraint_maps[access.struct_offset()];
+        let access: StructAccess = (&self.structure).into();
+        let self_map = &mut self.shape_constraint_maps[access.get_struct_offset()];
         let a_constraint = constraints.iter().next();
         let new_constraint = match a_constraint {
             None => {
                 let a_descriptor = &self.data_descriptors[*prim_offsets.iter().next().unwrap()];
                 Arc::from(ShapeConstraint::new(a_descriptor.dimension))
             }
-            Some(constraint) => (**constraint).clone(),
+            Some(constraint) => (*constraint).clone(),
         };
         self_map.insert(id, new_constraint.clone());
         for ref_ in &mut self.shape_constraint_refs {
@@ -92,7 +93,7 @@ impl Schema {
                 None => continue,
                 Some(ref_) => {
                     for constraint in &constraints {
-                        if eq(ref_, constraint) {
+                        if ref_.as_ref().get_const_ptr() == constraint.get_const_ptr() {
                             assert!(ref_.dimension() == new_constraint.dimension());
                             *ref_ = new_constraint.clone();
                             break;
@@ -105,12 +106,12 @@ impl Schema {
             self.shape_constraint_refs[offset] = Some(new_constraint.clone());
         }
     }
-    pub fn add_shape_constraints<'a>(
+    pub fn add_shape_constraints(
         &mut self,
-        new_constraints: impl Iterator<Item = (String, Vec<&'a Arc<ShapeConstraint>>, Vec<usize>)>,
+        new_constraints: impl Iterator<Item = (String, Vec<Arc<ShapeConstraint>>, Vec<usize>)>,
     ) {
-        let access: StructAccess = self.structure.clone().into();
-        let self_map = &mut self.shape_constraint_maps[access.struct_offset()];
+        let access: StructAccess = (&self.structure).into();
+        let self_map = &mut self.shape_constraint_maps[access.get_struct_offset()];
         for (id, constraints, offsets) in new_constraints {
             self.add_shape_constraint(id, constraints, offsets);
         }
@@ -120,9 +121,9 @@ impl Schema {
         ids: impl Iterator<Item = &'a String>,
         constraint_id: &String,
     ) -> Option<&Arc<ShapeConstraint>> {
-        let root: StructAccess = self.structure.clone().into();
-        let end = root.access(ids);
-        self.shape_constraint_maps[end?.struct_offset()].get(constraint_id)
+        let root: StructAccess = (&self.structure).into();
+        let end = root.find_struct_by_strings(ids);
+        self.shape_constraint_maps[end?.get_struct_offset()].get(constraint_id)
     }
     ///Give each different constraints an unique i32,referenced by prim offset,used for ui or debug
     pub fn gen_shape_constraint_ids(&self) -> Vec<i32> {
@@ -133,12 +134,12 @@ impl Schema {
             let add = match ref_op {
                 None => -1,
                 Some(ref_) => {
-                    let class_id = if !class.contains_key(&ptr(ref_)) {
+                    let class_id = if !class.contains_key(&ref_.as_ref().get_const_ptr()) {
                         class_count += 1;
-                        class.insert(ptr(ref_), class_count);
+                        class.insert(ref_.as_ref().get_const_ptr(), class_count);
                         class_count
                     } else {
-                        class[&ptr(ref_)]
+                        class[&ref_.as_ref().get_const_ptr()]
                     };
                     class_id
                 }

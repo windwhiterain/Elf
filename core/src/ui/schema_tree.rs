@@ -31,7 +31,7 @@ pub struct Node {
 }
 impl UIInfor<Node> for resource::Resource<Schema> {
     fn gen_infor(&self) -> Node {
-        let access: StructAccess = self.value.structure.clone().into();
+        let access: StructAccess = (&self.value.structure).into();
         _get_node(
             &self.value,
             &self.value.gen_shape_constraint_ids(),
@@ -42,7 +42,7 @@ impl UIInfor<Node> for resource::Resource<Schema> {
 }
 fn _get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAccess) -> Node {
     let mut childs = access
-        .prims()
+        .get_prims()
         .map(|(id, field)| Node {
             x: 0.0,
             y: 0.0,
@@ -53,7 +53,7 @@ fn _get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAcce
         })
         .collect::<Vec<Node>>();
     let mut subs = access
-        .subs()
+        .get_structs()
         .map(|(id, access)| _get_node(schema, sc_ids, id.clone(), &access))
         .collect::<Vec<Node>>();
     childs.append(&mut subs);

@@ -8,14 +8,20 @@ where
     ret.resize_with(len, || value.clone());
     ret
 }
-///Whether two arc are pointing to a same struct
-pub fn eq<T>(left: &Arc<T>, right: &Arc<T>) -> bool {
-    ptr(left) == ptr(right)
-}
 ///Read only raw ptr of an arc usually used as key
-pub fn ptr<T>(arc: &Arc<T>) -> *const T {
-    let ptr: *const T = arc.as_ref();
-    ptr
+pub trait ConstPtr<T> {
+    fn get_const_ptr(&self) -> *const T;
+}
+impl<T> ConstPtr<T> for &T {
+    fn get_const_ptr(&self) -> *const T {
+        let ptr: *const T = *self;
+        ptr
+    }
+}
+impl<T> ConstPtr<T> for &Arc<T> {
+    fn get_const_ptr(&self) -> *const T {
+        self.get_const_ptr()
+    }
 }
 ///Copy an arc by clone the struct it pointing to
 pub fn deep_copy<T>(arc: &Arc<T>) -> Arc<T>

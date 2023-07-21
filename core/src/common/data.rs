@@ -1,10 +1,11 @@
 use crate::help::vec;
-
+use crate::resource::NamePath;
 #[derive(Debug)]
 pub struct Data {}
 #[derive(Debug)]
 pub struct DataDescriptor {
     pub dimension: usize,
+    pub typename: NamePath,
 }
 #[derive(Debug, Clone)]
 pub struct ShapeConstraint {

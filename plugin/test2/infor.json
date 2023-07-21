@@ -1,0 +1,6 @@
+{
+  "url": "test_plugin2",
+  "plugin_type": "taichi",
+  "dependency": [],
+  "description": "for test only"
+}
