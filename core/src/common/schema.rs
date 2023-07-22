@@ -146,6 +146,12 @@ impl Schema {
             };
             ret.push(add)
         }
+        for id in &mut ret {
+            if *id == -1 {
+                class_count += 1;
+                *id = class_count;
+            }
+        }
         ret
     }
 }

@@ -191,7 +191,6 @@ impl NamePath {
 fn test() {
     let mut context = starter::test_initialize();
     context.resource.load_plugins();
-    let t = context.resource.plugins_content.schemas.get(1).unwrap();
-    println!("{:#?}", t);
+    let t = context.resource.plugins_content.schemas.get(3).unwrap();
     t.display(&context);
 }
