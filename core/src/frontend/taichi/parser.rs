@@ -7,9 +7,12 @@ use crate::common::structure::PrimField;
 use crate::common::structure::StructAccess;
 use crate::common::*;
 use crate::frontend;
+use crate::resource;
+use crate::resource::Directory;
 use crate::resource::NamePath;
 use crate::resource::Plugin;
 use crate::resource::Resource;
+use crate::resource::Resources;
 use rustpython_ast::*;
 use rustpython_parser::parser;
 pub struct Parser {
@@ -17,7 +20,18 @@ pub struct Parser {
     shape_constraint_name: String,
 }
 impl frontend::Parser for Parser {
-    fn parse(&self, context: &mut crate::Context, plugin: &Arc<Resource<Plugin>>, folder: PathBuf) {
+    fn parse_code(
+        &self,
+        content: &mut resource::PluginsContent,
+        plugin: &Arc<Resource<Directory<Plugin>>>,
+        code: String,
+    ) {
+        let ast = parser::parse_program(&code, "").unwrap();
+
+        for (name, kw) in self.extract_schema(ast) {
+            let schema = self.parse_schema(name, kw, content, plugin.clone());
+            content.schemas.add(Arc::new(schema));
+        }
     }
 }
 impl Parser {
@@ -27,14 +41,12 @@ impl Parser {
             shape_constraint_name: "shape_constraint".into(),
         }
     }
-    pub fn parse_code(
-        &mut self,
-        code: String,
-        context: &mut crate::Context,
-        plugin: &Arc<Resource<Plugin>>,
-    ) {
-        let ast = parser::parse_program(&code, "").unwrap();
-        for locate in ast {
+    pub fn extract_schema(
+        &self,
+        stmts: Vec<Located<StmtKind>>,
+    ) -> Vec<(String, Vec<Located<KeywordData>>)> {
+        let mut ret = vec![];
+        for locate in stmts {
             let node = locate.node;
             match node {
                 StmtKind::ClassDef {
@@ -49,7 +61,7 @@ impl Parser {
                         match node {
                             ExprKind::Name { id, ctx } => {
                                 if id == self.schema_decorator_name {
-                                    let schema = self.parse_schema(name, keywords, context, plugin);
+                                    ret.push((name, keywords));
                                     break;
                                 }
                             }
@@ -57,16 +69,17 @@ impl Parser {
                         }
                     }
                 }
-                _ => panic!(),
+                _ => (),
             }
         }
+        ret
     }
     pub fn parse_schema(
         &self,
         name: String,
         decorator_list: Vec<Located<KeywordData>>,
-        context: &crate::Context,
-        plugin: &Arc<Resource<Plugin>>,
+        content: &mut resource::PluginsContent,
+        plugin: Arc<Resource<Directory<Plugin>>>,
     ) -> Resource<Schema> {
         let mut struct_fields = vec![];
         let mut prim_fields = vec![];
@@ -94,10 +107,9 @@ impl Parser {
                 }
                 (expr) => {
                     let name_path = expr.into();
-                    let schema = &context
-                        .resource
+                    let schema = &content
                         .schemas
-                        .find(name_path, plugin)
+                        .find(&name_path, Some(&plugin))
                         .unwrap()
                         .value;
                     struct_fields.push((field_name, schema))
@@ -137,7 +149,7 @@ impl Parser {
             }
         }
         schema.add_shape_constraints(shape_constraints.into_iter());
-        Resource::new(name, schema, plugin.clone())
+        Resource::new(name, schema, Some(plugin), true)
     }
 }
 fn try_to_int(node: ExprKind) -> Option<usize> {

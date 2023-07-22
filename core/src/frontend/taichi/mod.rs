@@ -1,6 +1,7 @@
 mod parser;
 use crate::resource::*;
 use rustpython_ast::*;
+pub type Parser = parser::Parser;
 impl From<ExprKind> for NamePath {
     fn from(value: ExprKind) -> Self {
         let mut names = vec![];

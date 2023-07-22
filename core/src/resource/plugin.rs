@@ -1,11 +1,25 @@
-use std::{error::Error, fs, path::PathBuf, sync::Weak};
+use std::{
+    default,
+    error::Error,
+    fs,
+    path::PathBuf,
+    sync::{Arc, Weak},
+};
 
-use super::{Directory, Resource};
-use serde::Deserialize;
+use crate::{
+    common::Schema,
+    frontend::{self, Parser},
+    help::file,
+};
+
+use super::{Directory, NamePath, PluginsContent, Resource, Resources};
+use once_cell::sync::Lazy;
+use serde::{de::IntoDeserializer, Deserialize};
 
 #[derive(Debug)]
 pub enum Type {
     Taichi,
+    Any,
 }
 impl TryInto<Type> for String {
     type Error = ();
@@ -22,13 +36,66 @@ pub struct Plugin {
     pub dependency: Vec<Denpendency>,
     pub desciption: String,
 }
+pub static ROOT_PLUGIN: Lazy<Arc<Resource<Directory<Plugin>>>> = Lazy::new(|| {
+    Arc::new(Resource {
+        name: "root".to_string(),
+        value: Directory::new(
+            Plugin::new(
+                Type::Any,
+                Vec::default(),
+                String::from("The top level plugin that any other plugin based on"),
+            ),
+            PathBuf::default(),
+        ),
+        plugin: Weak::default(),
+        completed: true.into(),
+    })
+});
+static COLD_PATH: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("./code"));
+static SERIALIZED_PATH: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("./serialized"));
+impl Plugin {
+    pub fn new(plugin_type: Type, dependency: Vec<Denpendency>, desciption: String) -> Self {
+        Plugin {
+            plugin_type,
+            dependency,
+            desciption,
+        }
+    }
+}
+impl Directory<Plugin> {
+    pub fn get_code_file_node(&self) -> file::Node {
+        file::Node::from(self.path.join(&*COLD_PATH))
+    }
+}
+pub fn complete(
+    plugin: &Arc<Resource<Directory<Plugin>>>,
+    plugins: &Resources<Directory<Plugin>>,
+    plugins_content: &mut PluginsContent,
+) {
+    if !plugin.try_complete() {
+        return;
+    }
+    for dependency in &plugin.value.value.dependency {
+        complete(
+            plugins.find(&dependency.name_path, None).unwrap(),
+            plugins,
+            plugins_content,
+        );
+    }
+    let codes = plugin.value.get_code_file_node().get_all_code(".py");
+    let parser: Box<dyn frontend::Parser> = match plugin.value.value.plugin_type {
+        Type::Taichi => Box::new(frontend::taichi::Parser::new()),
+        Type::Any => panic!(),
+    };
+    parser.parse_codes(plugins_content, &plugin, codes);
+}
 #[derive(Deserialize)]
 struct JsonDenpendency {
     pub url: String,
 }
 #[derive(Debug)]
 pub struct Denpendency {
-    pub url: String,
+    pub name_path: NamePath,
 }
 #[derive(Deserialize)]
 struct JsonInfor {
@@ -47,21 +114,24 @@ impl From<PathBuf> for Resource<Directory<Plugin>> {
                 panic!("{:?}", e);
             }
         };
-        Resource {
-            value: Directory {
-                value: Plugin {
-                    plugin_type: json_infor.plugin_type.try_into().unwrap(),
-                    dependency: json_infor
+        Resource::new(
+            json_infor.url,
+            Directory {
+                value: Plugin::new(
+                    json_infor.plugin_type.try_into().unwrap(),
+                    json_infor
                         .dependency
                         .into_iter()
-                        .map(|js| Denpendency { url: js.url })
+                        .map(|js| Denpendency {
+                            name_path: js.url.into(),
+                        })
                         .collect(),
-                    desciption: json_infor.description,
-                },
+                    json_infor.description,
+                ),
                 path,
             },
-            name: json_infor.url,
-            plugin: Weak::default(),
-        }
+            None,
+            false,
+        )
     }
 }

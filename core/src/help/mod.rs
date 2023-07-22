@@ -1,3 +1,4 @@
+pub mod file;
 use std::sync::Arc;
 ///Create a vec with the size of len filled with value
 pub fn vec<T>(len: usize, value: T) -> Vec<T>
@@ -20,7 +21,8 @@ impl<T> ConstPtr<T> for &T {
 }
 impl<T> ConstPtr<T> for &Arc<T> {
     fn get_const_ptr(&self) -> *const T {
-        self.get_const_ptr()
+        let ptr: *const T = self.as_ref();
+        ptr
     }
 }
 ///Copy an arc by clone the struct it pointing to
@@ -30,6 +32,7 @@ where
 {
     Arc::<T>::new((**arc).clone())
 }
+///A php flavour sytex to create a hashmap
 #[macro_export]
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {{
@@ -37,4 +40,38 @@ macro_rules! hashmap {
          $( map.insert($key, $val); )*
          map
     }}
+}
+struct CompresIter<'a, T, V: 'a>
+where
+    T: Iterator<Item = &'a Option<V>>,
+{
+    iter: T,
+}
+impl<'a, T, V> Iterator for CompresIter<'a, T, V>
+where
+    T: Iterator<Item = &'a Option<V>>,
+{
+    type Item = &'a V;
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.iter.next() {
+                None => {
+                    return None;
+                }
+                Some(v) => match v {
+                    None => {
+                        continue;
+                    }
+                    Some(v) => {
+                        return Some(v);
+                    }
+                },
+            }
+        }
+    }
+}
+pub fn compress<'a, T: 'a>(
+    iter: impl Iterator<Item = &'a Option<T>>,
+) -> impl Iterator<Item = &'a T> {
+    return CompresIter { iter };
 }

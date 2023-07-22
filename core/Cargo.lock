@@ -146,6 +146,7 @@ name = "elf"
 version = "0.1.0"
 dependencies = [
  "num-bigint",
+ "once_cell",
  "pyo3",
  "rustpython-ast",
  "rustpython-parser",
