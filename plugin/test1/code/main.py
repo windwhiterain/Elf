@@ -4,14 +4,14 @@ from taichi.math import *
 class Ray:
     start:vec3[1]#field primitive,dimension is 1
     direction:vec3[1]
-    all_sc:shape_constrain(start,direction)
+    all_sc:shape_constraint(start,direction)
 @schema
 class Light:
     ray:Ray#compound:refers to Ray
     energe:float[1]
-    line_sc:shape_constrain(ray.all_sc,energe)
+    line_sc:shape_constraint(ray.all_sc,energe)
     density:float[3]#dimension is 3
-    mode:int#variable primitive
+    mode:int[0]#variable primitive
 @elf.operator
 class MoveLight(elf.Operator):
     def process(self,light:Light):#entry:parameter type determines the schema

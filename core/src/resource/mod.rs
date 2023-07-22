@@ -184,18 +184,14 @@ impl NamePath {
         self.names.first().unwrap()
     }
     pub fn prefixs(&self) -> impl Iterator<Item = &String> {
-        self.names[0..self.names.len() - 2].iter()
+        self.names[0..self.names.len() - 1].iter()
     }
 }
 #[test]
 fn test() {
     let mut context = starter::test_initialize();
     context.resource.load_plugins();
-    context
-        .resource
-        .plugins_content
-        .schemas
-        .get(1)
-        .unwrap()
-        .display(&context);
+    let t = context.resource.plugins_content.schemas.get(1).unwrap();
+    println!("{:#?}", t);
+    t.display(&context);
 }

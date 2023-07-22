@@ -1,3 +1,4 @@
+mod help;
 mod parser;
 use crate::resource::*;
 use rustpython_ast::*;
