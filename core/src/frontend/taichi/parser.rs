@@ -7,11 +7,13 @@ use crate::common::structure::PrimField;
 use crate::common::structure::StructAccess;
 use crate::common::*;
 use crate::frontend;
+use crate::help::ecs::Entity;
 use crate::resource;
-use crate::resource::Directory;
-use crate::resource::NamePath;
+use crate::resource::container::Elem;
+use crate::resource::container::File;
+use crate::resource::container::Std;
+use crate::resource::name_path::NamePath;
 use crate::resource::Plugin;
-use crate::resource::Resource;
 use crate::resource::Resources;
 use rustpython_ast::*;
 use rustpython_parser::parser;
@@ -25,7 +27,7 @@ impl frontend::Parser for Parser {
     fn parse_code(
         &self,
         content: &mut resource::PluginsContent,
-        plugin: &Arc<Resource<Directory<Plugin>>>,
+        plugin: &Arc<File<Plugin>>,
         code: String,
     ) {
         let ast = parser::parse_program(&code, "").unwrap();
@@ -81,8 +83,8 @@ impl Parser {
         name: String,
         bodies: Vec<Located<StmtKind>>,
         content: &mut resource::PluginsContent,
-        plugin: Arc<Resource<Directory<Plugin>>>,
-    ) -> Resource<Schema> {
+        plugin: Arc<File<Plugin>>,
+    ) -> Elem<Schema> {
         let mut struct_fields: Vec<(String, &schema::Schema)> = vec![];
         let mut prim_fields: Vec<(String, data::DataDescriptor)> = vec![];
         let mut calls: Vec<(String, Box<Located<ExprKind>>, Vec<Located<ExprKind>>)> = vec![];
@@ -120,7 +122,8 @@ impl Parser {
                                 .schemas
                                 .find(&name_path, Some(&plugin))
                                 .unwrap()
-                                .value;
+                                .as_ref()
+                                .val;
                             struct_fields.push((field_name, schema))
                         }
                     }
@@ -163,6 +166,9 @@ impl Parser {
             }
         }
         schema.add_shape_constraints(shape_constraints.into_iter());
-        Resource::new(name, schema, Some(plugin), true)
+        Elem {
+            val: schema,
+            std: Std::new(name, Some(plugin), true),
+        }
     }
 }

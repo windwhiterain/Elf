@@ -9,7 +9,9 @@ use pyo3::{prelude::*, types::PyList};
 
 use crate::{
     common::{structure::StructAccess, Schema},
-    resource, Context,
+    help::ecs::Entity,
+    resource::{self, container::Std},
+    Context,
 };
 
 use super::UIInfor;
@@ -29,13 +31,13 @@ pub struct Node {
     #[pyo3(get)]
     pub sc_id: i32,
 }
-impl UIInfor<Node> for resource::Resource<Schema> {
+impl UIInfor<Node> for resource::container::Elem<Schema> {
     fn gen_infor(&self) -> Node {
-        let access: StructAccess = (&self.value.structure).into();
+        let access: StructAccess = (&self.val.structure).into();
         _get_node(
-            &self.value,
-            &self.value.gen_shape_constraint_ids(),
-            self.name.clone(),
+            &self.val,
+            &self.val.gen_shape_constraint_ids(),
+            self.std.name.clone(),
             &access,
         )
     }

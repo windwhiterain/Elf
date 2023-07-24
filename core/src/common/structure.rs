@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Weak},
 };
 
-use crate::resource::NamePath;
+use crate::resource::name_path::NamePath;
 #[derive(Debug, Clone)]
 pub struct StructField {
     value: Weak<Structure>,

@@ -1,3 +1,4 @@
+pub mod ecs;
 pub mod file;
 use std::sync::Arc;
 ///Create a vec with the size of len filled with value

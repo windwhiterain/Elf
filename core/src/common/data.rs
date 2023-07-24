@@ -1,5 +1,5 @@
 use crate::help::vec;
-use crate::resource::NamePath;
+use crate::resource::name_path::NamePath;
 #[derive(Debug)]
 pub struct Data {}
 #[derive(Debug)]
