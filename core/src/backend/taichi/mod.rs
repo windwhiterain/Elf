@@ -24,5 +24,11 @@ pub fn schema_to_struct_code(schema: &SchemaR, id: usize) -> Vec<String> {
             .unwrap();
         lines.push(format!("    {name} : {type_name}"));
     }
+    for (name, field) in StructAccess::from(&schema.val.structure).get_prims() {
+        let type_name = DATA_TYPE_MAP
+            .get_by_right(&schema.val.data_descriptors[field.prim_offset].data_type)
+            .unwrap();
+        lines.push(format!("    {name} : {type_name}"));
+    }
     lines
 }
