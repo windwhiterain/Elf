@@ -1,11 +1,14 @@
 use crate::help::vec;
 use crate::resource::name_path::NamePath;
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Type {
+    Int,
+    Float,
+}
 #[derive(Debug)]
-pub struct Data {}
-#[derive(Debug)]
-pub struct DataDescriptor {
+pub struct Descriptor {
     pub dimension: usize,
-    pub typename: NamePath,
+    pub data_type: Type,
 }
 #[derive(Debug, Clone)]
 pub struct ShapeConstraint {

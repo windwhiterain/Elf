@@ -20,12 +20,6 @@ impl<T> ConstPtr<T> for &T {
         ptr
     }
 }
-impl<T> ConstPtr<T> for &Arc<T> {
-    fn get_const_ptr(&self) -> *const T {
-        let ptr: *const T = self.as_ref();
-        ptr
-    }
-}
 ///Copy an arc by clone the struct it pointing to
 pub fn deep_copy<T>(arc: &Arc<T>) -> Arc<T>
 where

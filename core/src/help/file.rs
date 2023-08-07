@@ -45,10 +45,10 @@ impl Node {
     pub fn get_code(&self) -> String {
         fs::read_to_string(&self.path).unwrap()
     }
-    pub fn get_all_code(&self, suffix: &str) -> Vec<String> {
-        let mut ret = vec![];
-        for file in self.get_all_file(suffix) {
-            ret.push(file.get_code())
+    pub fn get_all_child_file(&self, suffix: &str) -> Vec<Node> {
+        let mut ret = Vec::<Node>::from_iter(self.get_all_file(suffix));
+        for node in self.get_all_dir() {
+            ret.append(&mut node.get_all_child_file(suffix));
         }
         ret
     }

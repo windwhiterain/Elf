@@ -1,5 +1,7 @@
 use rustpython_ast::{Constant, ExprKind};
 
+use crate::resource::name_path::NamePath;
+
 pub fn get_name(expr: &ExprKind) -> Option<String> {
     match expr {
         ExprKind::Name { id, ctx } => Some(id.clone()),
@@ -25,4 +27,23 @@ pub fn get_int(node: ExprKind) -> Option<usize> {
         },
         _ => None,
     }
+}
+pub fn get_name_path(value: &ExprKind) -> NamePath {
+    let mut names = vec![];
+    let mut current = value;
+    loop {
+        match current {
+            ExprKind::Name { id, ctx } => {
+                names.push(id.clone());
+                break;
+            }
+            ExprKind::Attribute { value, attr, ctx } => {
+                names.push(attr.clone());
+                current = &value.node;
+            }
+            _ => panic!(),
+        }
+    }
+    names.reverse();
+    names.into()
 }

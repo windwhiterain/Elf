@@ -1,8 +1,12 @@
 pub mod container;
 pub mod name_path;
 pub mod plugin;
-use self::container::*;
+use self::{container::*, plugin::PluginR};
 use crate::{
+    common::{
+        operator::data_operator::{DataOperator, DataOperatorR},
+        schema::SchemaR,
+    },
     help::ecs::{Attach, Entity},
     *,
 };
@@ -12,6 +16,7 @@ use std::{
     cell::Cell,
     default, fs,
     marker::PhantomData,
+    ops::Deref,
     path::Path,
     sync::{atomic, Mutex, RwLock},
 };
@@ -21,18 +26,14 @@ pub(crate) type Plugin = plugin::Plugin;
 ///The only one context to manage resources in an elf applycation
 #[derive(Debug)]
 pub struct Context {
-    pub plugins: Resources<File<Plugin>>,
+    pub plugins: Resources<PluginR>,
     pub plugins_content: PluginsContent,
     pub plugin_search_paths: Vec<PathBuf>,
 }
 #[derive(Debug, Default)]
 pub struct PluginsContent {
-    pub schemas: Resources<Elem<Schema>>,
-}
-impl PluginsContent {
-    pub fn append(&mut self, mut other: PluginsContent) {
-        self.schemas.append(other.schemas);
-    }
+    pub schemas: Resources<SchemaR>,
+    pub data_operators: Resources<DataOperatorR>,
 }
 impl Context {
     pub fn new() -> Self {
@@ -46,7 +47,8 @@ impl Context {
         for search_path in &self.plugin_search_paths {
             let node = file::Node::from(search_path.clone());
             for dir in node.get_all_dir() {
-                self.plugins.add(Arc::new(dir.path().clone().into()));
+                let path = dir.path().clone();
+                self.plugins.add(Arc::new(path.into()));
             }
         }
     }
@@ -87,14 +89,25 @@ where
         }
         None
     }
-    pub fn append(&mut self, mut other: Self) {
-        self.id_map.append(&mut other.id_map)
-    }
 
     pub fn add(&mut self, resource: Arc<Entity>) {
         match self.try_get_vacancy() {
-            Some(index) => self.id_map[index] = Some(resource),
-            None => self.id_map.push(Some(resource)),
+            Some(index) => {
+                resource
+                    .as_ref()
+                    .comp::<Std>()
+                    .id
+                    .swap(index, atomic::Ordering::Relaxed);
+                self.id_map[index] = Some(resource)
+            }
+            None => {
+                resource
+                    .as_ref()
+                    .comp::<Std>()
+                    .id
+                    .swap(self.id_map.len(), atomic::Ordering::Relaxed);
+                self.id_map.push(Some(resource))
+            }
         };
     }
     pub fn get(&self, id: usize) -> Option<&Arc<Entity>> {
@@ -103,9 +116,9 @@ where
     pub fn find(
         &self,
         name_path: &NamePath,
-        plugin: Option<&File<Plugin>>,
+        environment: Option<&PluginR>,
     ) -> Option<&Arc<Entity>> {
-        let plugin = match plugin {
+        let plugin = match environment {
             Some(v) => v,
             None => &ROOT_PLUGIN,
         };
@@ -113,7 +126,7 @@ where
             if let Some(resource) = value.as_ref() {
                 let resource_plugin = &resource.get().plugin.upgrade().unwrap();
                 if name_path.name() == &resource.get().name {
-                    if resource_plugin.get_const_ptr() == plugin.get_const_ptr()
+                    if resource_plugin.as_ref().get_const_ptr() == plugin.get_const_ptr()
                         || &resource_plugin.as_ref().comp::<Std>().name == name_path.plugin_name()
                     {
                         return Some(&resource);
@@ -126,12 +139,33 @@ where
     pub fn get_all(&self) -> impl Iterator<Item = &Arc<Entity>> {
         compress(self.id_map.iter())
     }
+    pub fn filter_by_plugins<'a>(
+        &'a self,
+        plugins: &'a Vec<&PluginR>,
+    ) -> impl Iterator<Item = &Arc<Entity>> + 'a {
+        self.get_all().filter(move |r| {
+            for plugin in plugins {
+                if r.as_ref()
+                    .get()
+                    .plugin
+                    .upgrade()
+                    .unwrap()
+                    .as_ref()
+                    .get_const_ptr()
+                    == plugin.get_const_ptr()
+                {
+                    return true;
+                }
+            }
+            false
+        })
+    }
 }
 
 #[test]
 fn test() {
     let mut context = starter::test_initialize();
     context.resource.load_plugins();
-    let t = context.resource.plugins_content.schemas.get(3).unwrap();
+    let t = context.resource.plugins_content.schemas.get(1).unwrap();
     t.display(&context);
 }

@@ -8,11 +8,12 @@ use std::vec;
 use crate::data::*;
 use crate::help::*;
 use crate::structure::*;
+pub type SchemaR = crate::resource::container::Elem<Schema>;
 #[derive(Debug)]
 pub struct Schema {
     pub structure: Arc<Structure>,
     ///Referenced by prim offset
-    pub data_descriptors: Vec<DataDescriptor>,
+    pub data_descriptors: Vec<Descriptor>,
     ///Referenced by prim offset
     pub shape_constraint_refs: Vec<Option<Arc<ShapeConstraint>>>,
     ///Referenced by struct offset
@@ -21,7 +22,7 @@ pub struct Schema {
 impl Schema {
     pub fn new<'a>(
         schemas: impl Iterator<Item = (String, &'a Schema)>,
-        prims: impl Iterator<Item = (String, DataDescriptor)>,
+        prims: impl Iterator<Item = (String, Descriptor)>,
     ) -> Schema {
         let mut structure = Structure::new();
         let mut data_descriptors = Vec::new();
@@ -43,7 +44,8 @@ impl Schema {
                                 match v {
                                     None => continue,
                                     Some(v) => {
-                                        if constraint.as_ref().get_const_ptr() == v.get_const_ptr()
+                                        if constraint.as_ref().get_const_ptr()
+                                            == v.as_ref().get_const_ptr()
                                         {
                                             refs_t[k] = Some(new_constraint.clone());
                                         }
@@ -93,7 +95,7 @@ impl Schema {
                 None => continue,
                 Some(ref_) => {
                     for constraint in &constraints {
-                        if ref_.as_ref().get_const_ptr() == constraint.get_const_ptr() {
+                        if ref_.as_ref().get_const_ptr() == constraint.as_ref().get_const_ptr() {
                             assert!(ref_.dimension() == new_constraint.dimension());
                             *ref_ = new_constraint.clone();
                             break;

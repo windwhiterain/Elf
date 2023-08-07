@@ -2,17 +2,22 @@ use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     common::Schema,
-    resource::{self, container::File, Plugin, Resources},
+    graph::Graph,
+    resource::{self, container::File, plugin::PluginR, Plugin, Resources},
     Context,
 };
 
 pub mod taichi;
+pub struct CodeFile {
+    pub local_path: PathBuf,
+    pub code: String,
+}
 pub trait Parser {
     fn parse_codes(
         &self,
         content: &mut resource::PluginsContent,
-        plugin: &Arc<File<Plugin>>,
-        codes: Vec<String>,
+        plugin: &Arc<PluginR>,
+        codes: Vec<CodeFile>,
     ) {
         for code in codes {
             self.parse_code(content, plugin, code)
@@ -21,7 +26,10 @@ pub trait Parser {
     fn parse_code(
         &self,
         content: &mut resource::PluginsContent,
-        plugin: &Arc<File<Plugin>>,
-        code: String,
+        plugin: &Arc<PluginR>,
+        code: CodeFile,
     );
+}
+pub trait Generator<'a> {
+    fn generate(&self);
 }
