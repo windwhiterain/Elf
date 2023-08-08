@@ -7,29 +7,39 @@ use std::vec;
 
 use crate::data::*;
 use crate::help::*;
+use crate::resource::name_path::NamePath;
 use crate::structure::*;
+
+use super::DataDescriptor;
 pub type SchemaR = crate::resource::container::Elem<Schema>;
 #[derive(Debug)]
 pub struct Schema {
     pub structure: Arc<Structure>,
+    ///Referenced by local prim offset
+    data_descriptors: Vec<Descriptor>,
     ///Referenced by prim offset
-    pub data_descriptors: Vec<Descriptor>,
-    ///Referenced by prim offset
-    pub shape_constraint_refs: Vec<Option<Arc<ShapeConstraint>>>,
+    shape_constraint_refs: Vec<Option<Arc<ShapeConstraint>>>,
     ///Referenced by struct offset
-    pub shape_constraint_maps: Vec<HashMap<String, Arc<ShapeConstraint>>>,
+    shape_constraint_maps: Vec<HashMap<String, Arc<ShapeConstraint>>>,
+    ///Referenced by struct offset
+    sub_schemas: Vec<Arc<SchemaR>>,
 }
 impl Schema {
     pub fn new<'a>(
-        schemas: impl Iterator<Item = (String, &'a Schema)>,
+        schemas: impl Iterator<Item = (String, &'a Arc<SchemaR>)>,
         prims: impl Iterator<Item = (String, Descriptor)>,
     ) -> Schema {
         let mut structure = Structure::new();
-        let mut data_descriptors = Vec::new();
-        let mut shape_constraint_refs = Vec::new();
-        let mut shape_constraint_maps = Vec::new();
+        let mut data_descriptors: Vec<Descriptor> = Vec::new();
+        let mut shape_constraint_refs: Vec<Option<Arc<ShapeConstraint>>> = Vec::new();
+        let mut shape_constraint_maps: Vec<HashMap<String, Arc<ShapeConstraint>>> = Vec::new();
+        let mut sub_schemas: Vec<Arc<SchemaR>> = vec![];
         shape_constraint_maps.push(HashMap::new());
-        for (id, schema) in schemas {
+        for (id, _schema) in schemas {
+            let schema = &_schema.val;
+            let mut cur_sub_schemas = vec![_schema.clone()];
+            cur_sub_schemas.append(&mut schema.sub_schemas.clone());
+            sub_schemas.append(&mut cur_sub_schemas);
             let mut refs_t = vec(schema.shape_constraint_refs.len(), None);
             for map in &schema.shape_constraint_maps {
                 let mut new_map = HashMap::new();
@@ -58,7 +68,7 @@ impl Schema {
                 shape_constraint_maps.push(new_map);
             }
             shape_constraint_refs.append(&mut refs_t);
-            structure.add_struct(id, Arc::<Structure>::downgrade(&schema.structure));
+            structure.add_struct(id, schema.structure.clone());
         }
 
         for (id, data_descriptor) in prims {
@@ -71,25 +81,54 @@ impl Schema {
             data_descriptors,
             shape_constraint_refs,
             shape_constraint_maps,
+            sub_schemas,
         }
+    }
+    pub fn get_data_descriptor(&self, access: &PrimAccess) -> &DataDescriptor {
+        &if access.struct_offset == self.structure.get_self_struct().struct_offset {
+            self
+        } else {
+            &self.get_sub_schema_by_prim(access).val
+        }
+        .data_descriptors[access.local_prim_offset]
+    }
+    pub fn get_shape_constraint_ref(&self, access: &PrimAccess) -> &Option<Arc<ShapeConstraint>> {
+        &self.shape_constraint_refs[access.prim_offset]
+    }
+    pub fn get_shape_constraint_map(
+        &self,
+        access: &StructAccess,
+    ) -> &HashMap<String, Arc<ShapeConstraint>> {
+        &self.shape_constraint_maps[access.struct_offset]
+    }
+    pub fn get_shape_constraint_map_mut(
+        &mut self,
+        access: &StructAccess,
+    ) -> &mut HashMap<String, Arc<ShapeConstraint>> {
+        &mut self.shape_constraint_maps[access.struct_offset]
+    }
+    pub fn get_sub_schema(&self, access: &StructAccess) -> &Arc<SchemaR> {
+        &self.sub_schemas[access.struct_offset - 1]
+    }
+    pub fn get_sub_schema_by_prim(&self, access: &PrimAccess) -> &Arc<SchemaR> {
+        &self.sub_schemas[access.struct_offset - 1]
     }
     pub fn add_shape_constraint(
         &mut self,
         id: String,
         constraints: Vec<Arc<ShapeConstraint>>,
-        prim_offsets: Vec<usize>,
+        prims: Vec<PrimAccess>,
     ) {
-        let access: StructAccess = (&self.structure).into();
-        let self_map = &mut self.shape_constraint_maps[access.get_struct_offset()];
         let a_constraint = constraints.iter().next();
         let new_constraint = match a_constraint {
             None => {
-                let a_descriptor = &self.data_descriptors[*prim_offsets.iter().next().unwrap()];
+                let a_descriptor = self.get_data_descriptor(prims.iter().next().unwrap());
                 Arc::from(ShapeConstraint::new(a_descriptor.dimension))
             }
             Some(constraint) => (*constraint).clone(),
         };
-        self_map.insert(id, new_constraint.clone());
+        self.get_shape_constraint_map_mut(&self.structure.get_self_struct())
+            .insert(id, new_constraint.clone());
         for ref_ in &mut self.shape_constraint_refs {
             match ref_ {
                 None => continue,
@@ -104,28 +143,27 @@ impl Schema {
                 }
             }
         }
-        for offset in prim_offsets {
-            self.shape_constraint_refs[offset] = Some(new_constraint.clone());
+        for prim in prims {
+            self.shape_constraint_refs[prim.prim_offset] = Some(new_constraint.clone());
         }
     }
     pub fn add_shape_constraints(
         &mut self,
-        new_constraints: impl Iterator<Item = (String, Vec<Arc<ShapeConstraint>>, Vec<usize>)>,
+        new_constraints: impl Iterator<Item = (String, Vec<Arc<ShapeConstraint>>, Vec<PrimAccess>)>,
     ) {
-        let access: StructAccess = (&self.structure).into();
-        let self_map = &mut self.shape_constraint_maps[access.get_struct_offset()];
+        let self_map =
+            &mut self.shape_constraint_maps[self.structure.get_self_struct().struct_offset];
         for (id, constraints, offsets) in new_constraints {
             self.add_shape_constraint(id, constraints, offsets);
         }
     }
     pub fn get_constraint<'a>(
         &self,
-        ids: impl Iterator<Item = &'a String>,
+        ids: &NamePath,
         constraint_id: &String,
     ) -> Option<&Arc<ShapeConstraint>> {
-        let root: StructAccess = (&self.structure).into();
-        let end = root.find_struct_by_strings(ids);
-        self.shape_constraint_maps[end?.get_struct_offset()].get(constraint_id)
+        let end = self.structure.find_struct(ids)?;
+        self.shape_constraint_maps[end.struct_offset].get(constraint_id)
     }
     ///Give each different constraints an unique i32,referenced by prim offset,used for ui or debug
     pub fn gen_shape_constraint_ids(&self) -> Vec<i32> {

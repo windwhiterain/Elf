@@ -3,27 +3,16 @@ from taichi.math import *
 
 
 @schema
-class IntFloatPair:
+class IntFloat2:
     ints: int[1]
-    floats: float[1]
-    all_sc: shape_constraint(ints, floats)
+    float2s: test_plugin2.Float2
+    all_sc: shape_constraint(ints, float2s.all_sc)
 
 
-@schema
-class Light:
-    ray: test_plugin2.Ray
-    energe: float[1]
-    line_sc: shape_constraint(ray.all_sc, energe)
-    density: float[3]
-    mode: int[0]
-
-
-@elf.operator
-class MoveLight(elf.Operator):
-    def process(self, light: Light):
-        for index in ndrange(light.line_sc.shape):
-            start = light.ray.start[index]
-            direction = light.ray.direction[index]
-            energe = light.energe[index]
-            light.ray.start[index] += direction*energe * \
-                light.density[round(direction)]*light.mode
+@data_operator
+class Modify(elf.Operator):
+    def process(self, complex: test_plugin2.Complex):
+        for index in ndrange(complex.line_sc.shape):
+            complex.ff.a[index] = 1.0
+            complex.ff.b[index] = 2.0
+            complex.ints[index] = 3

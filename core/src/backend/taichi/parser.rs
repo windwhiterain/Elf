@@ -12,6 +12,7 @@ use crate::common;
 use crate::common::operator::data_operator::DataOperator;
 use crate::common::operator::data_operator::DataOperatorR;
 use crate::common::schema::SchemaR;
+use crate::common::structure::PrimAccess;
 use crate::common::structure::PrimField;
 use crate::common::structure::StructAccess;
 use crate::common::*;
@@ -129,7 +130,7 @@ impl Parser {
         content: &resource::PluginsContent,
         plugin: Arc<PluginR>,
     ) -> SchemaR {
-        let mut struct_fields: Vec<(String, &schema::Schema)> = vec![];
+        let mut struct_fields: Vec<(String, &Arc<SchemaR>)> = vec![];
         let mut prim_fields: Vec<(String, data::Descriptor)> = vec![];
         let mut calls: Vec<(String, Box<Located<ExprKind>>, Vec<Located<ExprKind>>)> = vec![];
         for stmt in class.body.iter() {
@@ -143,15 +144,16 @@ impl Parser {
                     let (field_name, value) = (get_name(&target.node).unwrap(), annotation.node);
                     match value {
                         ExprKind::Subscript { value, slice, ctx } => {
-                            let (typename, dimension) = (value.node, slice.node);
+                            let (typename, dimension) =
+                                (get_name(&value.node).unwrap(), slice.node);
                             prim_fields.push((
                                 field_name,
                                 DataDescriptor {
                                     dimension: get_int(dimension).unwrap(),
                                     data_type: super::DATA_TYPE_MAP
                                         .deref()
-                                        .get_by_left(get_name(&typename).unwrap().as_str())
-                                        .unwrap()
+                                        .get_by_left(typename.as_str())
+                                        .expect(format!("illegal type name:{}", typename).as_str())
                                         .clone(),
                                 },
                             ))
@@ -165,12 +167,7 @@ impl Parser {
                         }
                         expr => {
                             let name_path = get_name_path(&expr);
-                            let schema = &content
-                                .schemas
-                                .find(&name_path, Some(&plugin))
-                                .unwrap()
-                                .as_ref()
-                                .val;
+                            let schema = &content.schemas.find(&name_path, Some(&plugin)).unwrap();
                             struct_fields.push((field_name, schema))
                         }
                     }
@@ -179,30 +176,35 @@ impl Parser {
             }
         }
         let mut schema = Schema::new(struct_fields.into_iter(), prim_fields.into_iter());
-
-        let mut shape_constraints: Vec<(String, Vec<Arc<data::ShapeConstraint>>, Vec<usize>)> =
+        //shape_constraints
+        let mut shape_constraints: Vec<(String, Vec<Arc<data::ShapeConstraint>>, Vec<PrimAccess>)> =
             vec![];
         for call in calls {
             let (field_name, call_name, arg) = call;
+            //make sure the call is shape_constraint
             match call_name.node {
                 ExprKind::Name { id, ctx } => {
                     assert!(&id == &self.shape_constraint_name);
-                    let mut sc_refs = vec![];
-                    let mut prims = vec![];
+                    //shape_constraint_refs
+                    let mut sc_refs: Vec<Arc<data::ShapeConstraint>> = vec![];
+                    let mut prims: Vec<PrimAccess> = vec![];
                     for locate in arg {
                         let name_path = get_name_path(&locate.node);
-                        let access = StructAccess::from(&schema.structure);
-                        let target = access.find_struct(&name_path).unwrap();
-                        match target.find_prim_offset(name_path.name()) {
-                            Some(offset) => prims.push(offset),
+                        //whether refers to a prim or a constraint
+                        let _prim = schema.structure.find_prim(&name_path);
+                        match _prim {
+                            Some(prim) => prims.push(prim),
                             None => {
-                                let offset = target.get_struct_offset();
-                                let temp = &schema.shape_constraint_maps[offset];
-                                match schema.shape_constraint_maps[offset].get(name_path.name()) {
+                                let struct_access =
+                                    schema.structure.find_struct(&name_path.prefixs()).unwrap();
+                                match schema
+                                    .get_shape_constraint_map(&struct_access)
+                                    .get(name_path.name())
+                                {
                                     Some(sc_ref) => {
                                         sc_refs.push(sc_ref.clone());
                                     }
-                                    None => panic!(),
+                                    None => panic!("invalide constraint name:{name_path:?}"),
                                 }
                             }
                         }
@@ -239,6 +241,9 @@ impl Parser {
                     "process" => {
                         for _param in args.args.clone() {
                             let param = _param.node;
+                            if param.arg.as_str() == "self" {
+                                continue;
+                            }
                             match param.annotation {
                                 None => panic!(),
                                 Some(_annotation) => {

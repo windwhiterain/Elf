@@ -8,7 +8,10 @@ use std::{
 use pyo3::{prelude::*, types::PyList};
 
 use crate::{
-    common::{structure::StructAccess, Schema},
+    common::{
+        structure::{self, StructAccess},
+        Schema, Structure,
+    },
     help::ecs::Entity,
     resource::{self, container::Std},
     Context,
@@ -33,18 +36,18 @@ pub struct Node {
 }
 impl UIInfor<Node> for resource::container::Elem<Schema> {
     fn gen_infor(&self) -> Node {
-        let access: StructAccess = (&self.val.structure).into();
+        let view = &structure::View::from(self.val.structure.clone());
         _get_node(
             &self.val,
             &self.val.gen_shape_constraint_ids(),
             self.std.name.clone(),
-            &access,
+            view,
         )
     }
 }
-fn _get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAccess) -> Node {
+fn _get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &structure::View) -> Node {
     let mut childs = access
-        .get_prims()
+        .get_local_prims()
         .map(|(id, field)| Node {
             x: 0.0,
             y: 0.0,
@@ -55,7 +58,7 @@ fn _get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &StructAcce
         })
         .collect::<Vec<Node>>();
     let mut subs = access
-        .get_structs()
+        .get_local_structs()
         .map(|(id, access)| _get_node(schema, sc_ids, id.clone(), &access))
         .collect::<Vec<Node>>();
     childs.append(&mut subs);

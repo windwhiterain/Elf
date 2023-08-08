@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use crate::{
-    common::Schema,
+    common::{schema::SchemaR, Schema},
     graph::Graph,
     resource::{self, container::File, plugin::PluginR, Plugin, Resources},
     Context,
@@ -31,5 +31,5 @@ pub trait Parser {
     );
 }
 pub trait Generator<'a> {
-    fn generate(&self);
+    fn generate(&self, context: &Resources<SchemaR>);
 }

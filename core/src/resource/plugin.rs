@@ -3,7 +3,10 @@ use std::{
     error::Error,
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, Weak},
+    sync::{
+        atomic::{AtomicBool, AtomicUsize},
+        Arc, Weak,
+    },
 };
 
 use crate::{
@@ -50,7 +53,12 @@ pub static ROOT_PLUGIN: Lazy<Arc<File<Plugin>>> = Lazy::new(|| {
             String::from("The top level plugin that any other plugin based on"),
         ),
 
-        std: super::container::Std::new("root".to_string(), None, true),
+        std: super::container::Std {
+            name: "root".to_string(),
+            plugin: Weak::default(),
+            completed: AtomicBool::default(),
+            id: AtomicUsize::default(),
+        },
         dir: super::container::Dir {
             path: PathBuf::default(),
             is_local: false,

@@ -55,7 +55,7 @@ pub fn test_instance<'a>(resource: &resource::Context) -> Graph {
             resource
                 .plugins_content
                 .schemas
-                .find(&"IntFloatPair".to_string().into(), None)
+                .find(&"Complex".into(), Some(&test_plugin2))
                 .unwrap(),
         ),
         data_refs: vec![DataRef::Data { index: 0 }, DataRef::Data { index: 1 }],
@@ -66,7 +66,7 @@ pub fn test_instance<'a>(resource: &resource::Context) -> Graph {
                 resource
                     .plugins_content
                     .data_operators
-                    .find(&"Modify".to_string().into(), Some(&test_plugin1))
+                    .find(&"Modify".into(), Some(&test_plugin1))
                     .unwrap(),
             )),
             input_interfaces: vec![InputInterface {

@@ -97,7 +97,7 @@ where
                     .as_ref()
                     .comp::<Std>()
                     .id
-                    .swap(index, atomic::Ordering::Relaxed);
+                    .store(index, atomic::Ordering::Relaxed);
                 self.id_map[index] = Some(resource)
             }
             None => {
@@ -105,7 +105,7 @@ where
                     .as_ref()
                     .comp::<Std>()
                     .id
-                    .swap(self.id_map.len(), atomic::Ordering::Relaxed);
+                    .store(self.id_map.len(), atomic::Ordering::Relaxed);
                 self.id_map.push(Some(resource))
             }
         };
