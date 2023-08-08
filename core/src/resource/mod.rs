@@ -139,10 +139,13 @@ where
     pub fn get_all(&self) -> impl Iterator<Item = &Arc<Entity>> {
         compress(self.id_map.iter())
     }
-    pub fn filter_by_plugins<'a>(
+    pub fn filter_by_plugins<'a, T>(
         &'a self,
-        plugins: &'a Vec<&PluginR>,
-    ) -> impl Iterator<Item = &Arc<Entity>> + 'a {
+        plugins: &'a Vec<T>,
+    ) -> impl Iterator<Item = &Arc<Entity>> + 'a
+    where
+        T: AsRef<PluginR>,
+    {
         self.get_all().filter(move |r| {
             for plugin in plugins {
                 if r.as_ref()
@@ -152,7 +155,7 @@ where
                     .unwrap()
                     .as_ref()
                     .get_const_ptr()
-                    == plugin.get_const_ptr()
+                    == plugin.as_ref().get_const_ptr()
                 {
                     return true;
                 }

@@ -3,14 +3,17 @@ pub mod dependency;
 pub mod interface;
 pub mod operator;
 
-use std::sync::{Arc, Weak};
+use std::{
+    ops::Deref,
+    sync::{Arc, Weak},
+};
 
 use crate::{
     common::{data, schema::SchemaR},
     resource::{
         self,
         name_path::NamePath,
-        plugin::{Denpendency, PluginR},
+        plugin::{Denpendency, PluginR, ROOT_PLUGIN},
     },
 };
 
@@ -20,7 +23,7 @@ use self::{
     operator::{InputInterface, Operator},
 };
 pub struct Graph {
-    pub plugins: Vec<Weak<PluginR>>,
+    pub plugins: Vec<Arc<PluginR>>,
     pub datas: Vec<data::Descriptor>,
     pub interfaces: Vec<Interface>,
     pub nodes: Vec<Node>,
@@ -39,7 +42,11 @@ pub fn test_instance<'a>(resource: &resource::Context) -> Graph {
         .plugins
         .find(&"test_plugin2".to_string().into(), None)
         .unwrap();
-    let plugins = vec![Arc::downgrade(test_plugin1), Arc::downgrade(test_plugin2)];
+    let plugins = vec![
+        test_plugin1.clone(),
+        test_plugin2.clone(),
+        ROOT_PLUGIN.deref().clone(),
+    ];
     let datas = vec![
         data::Descriptor {
             dimension: 1,
@@ -58,7 +65,6 @@ pub fn test_instance<'a>(resource: &resource::Context) -> Graph {
                 .find(&"Complex".into(), Some(&test_plugin2))
                 .unwrap(),
         ),
-        data_refs: vec![DataRef::Data { index: 0 }, DataRef::Data { index: 1 }],
     }];
     let nodes = vec![Node::Operator {
         op: Operator {

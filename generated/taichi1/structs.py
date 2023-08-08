@@ -1,10 +1,14 @@
-class __elf_struct_0
-    b : float
-    a : float
-class __elf_struct_1
-    ints : int
-    mod : int
-    ff : Float2
-class __elf_struct_2
-    ints : int
-    float2s : Float2
+import taichi
+class __elf_struct_0:
+    def __init__(self):
+        self.b : taichi.Field=None
+        self.a : taichi.Field=None
+class __elf_struct_1:
+    def __init__(self):
+        self.ints : taichi.Field=None
+        self.mod : int=None
+        self.ff : __elf_struct_0=None
+class __elf_struct_2:
+    def __init__(self):
+        self.ints : taichi.Field=None
+        self.float2s : __elf_struct_0=None

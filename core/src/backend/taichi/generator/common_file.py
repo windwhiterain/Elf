@@ -1,4 +1,5 @@
 from typing import *
+import importlib.util
 
 
 class Dependency:
@@ -28,3 +29,13 @@ class Graph:
                 self.solve(dependency.nodes)
                 if dependency.action is not None:
                     dependency.action(self.context)
+
+
+def import_module_by_path(module_path):
+    """
+    根据给定的完整路径动态导入模块
+    """
+    spec = importlib.util.spec_from_file_location("module_name", module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module

@@ -8,5 +8,4 @@ pub enum DataRef {
 }
 pub struct Interface {
     pub schema: Weak<SchemaR>,
-    pub data_refs: Vec<DataRef>,
 }
