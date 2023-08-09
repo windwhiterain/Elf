@@ -11,7 +11,8 @@ class IntFloat2:
 
 @data_operator
 class Modify(elf.Operator):
-    def process(self, complex: test_plugin2.Complex):
+    @staticmethod
+    def process(complex: test_plugin2.Complex):
         for index in ndrange(complex.line_sc.shape):
             complex.ff.a[index] = 1.0
             complex.ff.b[index] = 2.0

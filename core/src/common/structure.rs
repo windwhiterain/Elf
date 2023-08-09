@@ -11,12 +11,14 @@ pub struct StructField {
     struct_offset: usize,
     prim_offset: usize,
     uniq_offset: usize,
+    name: String,
 }
 #[derive(Debug, Clone)]
 pub struct PrimField {
     pub prim_offset: usize,
     pub uniq_offset: usize,
     pub local_offset: usize,
+    name: String,
 }
 #[derive(Debug)]
 pub struct Structure {
@@ -53,26 +55,28 @@ impl Structure {
         }
         ret
     }
-    pub fn add_struct(&mut self, id: String, structure: Arc<Structure>) {
+    pub fn add_struct(&mut self, name: String, structure: Arc<Structure>) {
         self.struct_fields.insert(
-            id,
+            name.clone(),
             StructField {
                 structure: structure.clone(),
                 struct_offset: self.struct_count,
                 prim_offset: self.prim_count,
                 uniq_offset: self.local_struct_count(),
+                name,
             },
         );
         self.struct_count += structure.struct_count;
         self.prim_count += structure.prim_count;
     }
-    pub fn add_prim(&mut self, id: String) {
+    pub fn add_prim(&mut self, name: String) {
         self.prim_fields.insert(
-            id,
+            name.clone(),
             PrimField {
                 prim_offset: self.prim_count,
                 uniq_offset: self.local_prim_count(),
                 local_offset: self.prim_fields.len(),
+                name,
             },
         );
         self.prim_count += 1;
@@ -81,7 +85,7 @@ impl Structure {
         StructAccess::root()
     }
     pub fn find_local_struct(&self, id: &String) -> Option<StructAccess> {
-        Some(StructAccess::from(self.struct_fields.get(id)?))
+        Some(StructAccess::root().access_struct_field(self.struct_fields.get(id)?))
     }
     pub fn find_local_prim(&self, id: &String) -> Option<PrimAccess> {
         Some(StructAccess::root().access_prim_field(self.prim_fields.get(id)?))
@@ -122,6 +126,33 @@ impl Structure {
         }
         Some((access, cur))
     }
+    pub fn find_struct_by_offset(
+        &self,
+        struct_offset: usize,
+    ) -> Option<(StructAccess, &Structure)> {
+        let mut access = StructAccess::root();
+        let mut cur = self;
+        loop {
+            if access.struct_offset == struct_offset {
+                break;
+            }
+            let mut valide = false;
+            for (name, field) in cur.get_local_struct_fields() {
+                let _access = access.access_struct_field(&field);
+                if _access.struct_offset <= struct_offset
+                    && struct_offset < _access.struct_offset + field.structure.struct_count()
+                {
+                    access = _access;
+                    cur = field.structure.as_ref();
+                    valide = true
+                }
+            }
+            if !valide {
+                return None;
+            }
+        }
+        Some((access, cur))
+    }
     pub fn find_struct<'a>(&self, names: &NamePath) -> Option<StructAccess> {
         Some(self.find_struct_raw(names)?.0)
     }
@@ -133,6 +164,7 @@ impl Structure {
 ///Use this to access structure's data,this struct associated with a sub structure in a real structure
 #[derive(Debug)]
 pub struct StructAccess {
+    pub name_path: Vec<String>,
     pub struct_offset: usize,
     pub prim_offset: usize,
     pub uniq_offset: usize,
@@ -140,6 +172,7 @@ pub struct StructAccess {
 impl StructAccess {
     pub fn root() -> StructAccess {
         StructAccess {
+            name_path: Vec::new(),
             struct_offset: 0,
             prim_offset: 0,
             uniq_offset: 0,
@@ -147,6 +180,11 @@ impl StructAccess {
     }
     pub fn access_struct_field(&self, field: &StructField) -> StructAccess {
         StructAccess {
+            name_path: {
+                let mut ret = self.name_path.clone();
+                ret.push(field.name.clone());
+                ret
+            },
             struct_offset: self.struct_offset + field.struct_offset,
             prim_offset: self.prim_offset + field.prim_offset,
             uniq_offset: self.uniq_offset + field.uniq_offset,
@@ -154,6 +192,11 @@ impl StructAccess {
     }
     pub fn access_prim_field(&self, field: &PrimField) -> PrimAccess {
         PrimAccess {
+            name_path: {
+                let mut ret: Vec<String> = self.name_path.clone();
+                ret.push(field.name.clone());
+                ret
+            },
             struct_offset: self.struct_offset,
             prim_offset: self.prim_offset + field.prim_offset,
             uniq_offset: self.uniq_offset + field.uniq_offset,
@@ -161,17 +204,9 @@ impl StructAccess {
         }
     }
 }
-impl From<&StructField> for StructAccess {
-    fn from(field: &StructField) -> Self {
-        StructAccess {
-            struct_offset: field.struct_offset,
-            prim_offset: field.prim_offset,
-            uniq_offset: field.uniq_offset,
-        }
-    }
-}
 #[derive(Debug)]
 pub struct PrimAccess {
+    pub name_path: Vec<String>,
     pub struct_offset: usize,
     pub prim_offset: usize,
     pub uniq_offset: usize,

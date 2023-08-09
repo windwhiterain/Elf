@@ -7,7 +7,6 @@ use super::dependency;
 pub struct Operator {
     pub operator_type: Type,
     pub input_interfaces: Vec<InputInterface>,
-    pub const_denpendencies: dependency::Const,
 }
 pub struct InputInterface {
     pub name: String,

@@ -88,6 +88,9 @@ impl Std {
             .completed
             .swap(true, std::sync::atomic::Ordering::AcqRel)
     }
+    pub fn id(&self) -> usize {
+        self.id.load(atomic::Ordering::Relaxed)
+    }
 }
 #[derive(Debug)]
 pub struct Dir {

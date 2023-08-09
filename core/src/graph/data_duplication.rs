@@ -1,7 +1,6 @@
 use super::dependency;
 
-pub struct DataDuplication {
+pub struct DuplicateData {
     from: usize,
     to: usize,
-    const_denpendencies: dependency::Const,
 }

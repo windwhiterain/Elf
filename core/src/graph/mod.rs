@@ -1,13 +1,9 @@
 pub mod data_duplication;
 pub mod dependency;
 pub mod interface;
+pub mod new_arbitary_data;
+pub mod node;
 pub mod operator;
-
-use std::{
-    ops::Deref,
-    sync::{Arc, Weak},
-};
-
 use crate::{
     common::{data, schema::SchemaR},
     resource::{
@@ -16,9 +12,14 @@ use crate::{
         plugin::{Denpendency, PluginR, ROOT_PLUGIN},
     },
 };
+use node::{Node, StaticNode, StaticNodeType};
+use std::{
+    ops::Deref,
+    sync::{Arc, Weak},
+};
 
 use self::{
-    data_duplication::DataDuplication,
+    data_duplication::DuplicateData,
     interface::{DataRef, Interface},
     operator::{InputInterface, Operator},
 };
@@ -28,10 +29,7 @@ pub struct Graph {
     pub interfaces: Vec<Interface>,
     pub nodes: Vec<Node>,
 }
-pub enum Node {
-    Operator { op: Operator },
-    DataDuplication { dup: DataDuplication },
-}
+
 ///temp
 pub fn test_instance<'a>(resource: &resource::Context) -> Graph {
     let test_plugin1 = resource
@@ -66,8 +64,8 @@ pub fn test_instance<'a>(resource: &resource::Context) -> Graph {
                 .unwrap(),
         ),
     }];
-    let nodes = vec![Node::Operator {
-        op: Operator {
+    let nodes = vec![Node::Static(StaticNode {
+        node_type: StaticNodeType::Operator(Operator {
             operator_type: operator::Type::Data(Arc::downgrade(
                 resource
                     .plugins_content
@@ -76,12 +74,12 @@ pub fn test_instance<'a>(resource: &resource::Context) -> Graph {
                     .unwrap(),
             )),
             input_interfaces: vec![InputInterface {
-                name: "pair".to_string(),
+                name: "complex".to_string(),
                 index: 0,
             }],
-            const_denpendencies: dependency::Const { nodes: vec![] },
-        },
-    }];
+        }),
+        const_denpendencies: dependency::Const { nodes: vec![] },
+    })];
     Graph {
         plugins,
         datas,
