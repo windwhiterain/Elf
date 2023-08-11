@@ -1,12 +1,13 @@
 use super::{
-    data_duplication::DuplicateData, dependency, new_arbitary_data::NewArbitaryData,
+    arbitary_data::ArbitaryData, data_duplication::DuplicateData, dependency, new_data::NewData,
     operator::Operator,
 };
 
 pub enum StaticNodeType {
     Operator(Operator),
-    NewArbitryData(NewArbitaryData),
+    NewData(NewData),
     DuplicateData(DuplicateData),
+    ArbitaryData(ArbitaryData),
 }
 pub struct StaticNode {
     pub node_type: StaticNodeType,

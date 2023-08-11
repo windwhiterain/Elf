@@ -3,6 +3,7 @@ use pyo3::prelude::*;
 use pyo3::py_run;
 use pyo3::types::*;
 use std::collections::HashMap;
+use std::path::Path;
 use std::{fs::*, io::Read, path::PathBuf};
 #[pyclass]
 #[derive(Clone)]
@@ -20,30 +21,21 @@ impl Context {
     pub fn site_package_path(&self) -> PathBuf {
         self.env_path.join(PathBuf::from("Lib/site-packages"))
     }
-    pub fn run(&self, path: &PathBuf, globals: impl FnOnce(Python) -> Option<&PyDict>) {
+    pub fn run(&self, path: impl AsRef<Path>, globals: impl FnOnce(Python) -> Option<&PyDict>) {
         let mut code = String::new();
-        match File::open(&path) {
-            Ok(mut f) => {
-                f.read_to_string(&mut code);
-            }
-            Err(e) => {
-                println!("file_err:{}", e);
-            }
-        }
+        File::open(&path)
+            .expect({
+                let path_str = path.as_ref().to_str().unwrap();
+                format!("python file path err!path:{path_str}").as_str()
+            })
+            .read_to_string(&mut code)
+            .unwrap();
         Python::with_gil(|py| {
             let sys = py.import("sys").unwrap();
             let sys_path = sys.getattr("path").unwrap().downcast::<PyList>().unwrap();
             sys_path.insert(0, self.site_package_path()).unwrap();
             sys_path.insert(0, PathBuf::from("./core_py")).unwrap();
-            let res = py.run(&code, globals(py), None);
-            match res {
-                Ok(()) => {
-                    println!("python_ok");
-                }
-                Err(e) => {
-                    println!("python_err:{}", e);
-                }
-            }
+            py.run(&code, globals(py), None).expect("python err!");
         });
     }
 }

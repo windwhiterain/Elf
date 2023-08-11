@@ -1,52 +1,24 @@
-#[derive(Debug)]
-pub struct NamePath {
-    names: Vec<String>,
+pub trait NamePath {
+    fn wrap(&mut self, name: String);
+    fn name(&self) -> &String;
+    fn plugin_name(&self) -> &String;
+    fn prefixs(&self) -> Self;
+    fn to_code(&self) -> String;
 }
-impl From<Vec<String>> for NamePath {
-    fn from(names: Vec<String>) -> Self {
-        NamePath { names }
+impl NamePath for Vec<String> {
+    fn wrap(&mut self, name: String) {
+        self.insert(0, name);
     }
-}
-impl From<Vec<&str>> for NamePath {
-    fn from(names: Vec<&str>) -> Self {
-        NamePath {
-            names: Vec::from_iter(names.iter().map(|a| a.to_string())),
-        }
+    fn name(&self) -> &String {
+        self.last().unwrap()
     }
-}
-impl From<String> for NamePath {
-    fn from(name: String) -> Self {
-        NamePath { names: vec![name] }
+    fn plugin_name(&self) -> &String {
+        self.first().unwrap()
     }
-}
-impl From<&str> for NamePath {
-    fn from(value: &str) -> Self {
-        NamePath {
-            names: vec![value.to_string()],
-        }
+    fn prefixs(&self) -> Self {
+        (&self[0..self.len() - 1]).into()
     }
-}
-impl From<&[String]> for NamePath {
-    fn from(value: &[String]) -> Self {
-        NamePath {
-            names: Vec::from_iter(value.into_iter().map(|a| a.clone())),
-        }
-    }
-}
-impl NamePath {
-    pub fn wrap(&mut self, name: String) {
-        self.names.insert(0, name);
-    }
-    pub fn name(&self) -> &String {
-        self.names.last().unwrap()
-    }
-    pub fn plugin_name(&self) -> &String {
-        self.names.first().unwrap()
-    }
-    pub fn prefixs(&self) -> NamePath {
-        (&self.names[0..self.names.len() - 1]).into()
-    }
-    pub fn all(&self) -> impl Iterator<Item = &String> {
-        self.names.iter()
+    fn to_code(&self) -> String {
+        self.join(".")
     }
 }

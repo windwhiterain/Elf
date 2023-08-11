@@ -31,5 +31,5 @@ pub trait Parser {
     );
 }
 pub trait Generator<'a> {
-    fn generate(&self, context: &PluginsContent);
+    fn generate(&self, context: &Context);
 }

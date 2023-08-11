@@ -28,7 +28,7 @@ pub fn get_int(node: ExprKind) -> Option<usize> {
         _ => None,
     }
 }
-pub fn get_name_path(value: &ExprKind) -> NamePath {
+pub fn get_name_path(value: &ExprKind) -> Vec<String> {
     let mut names = vec![];
     let mut current = value;
     loop {

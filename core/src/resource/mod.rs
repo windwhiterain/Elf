@@ -46,7 +46,7 @@ impl Context {
     fn scan_plugins(&mut self) {
         for search_path in &self.plugin_search_paths {
             let node = file::Node::from(search_path.clone());
-            for dir in node.get_all_dir() {
+            for dir in node.get_local_dirs() {
                 let path = dir.path().clone();
                 self.plugins.add(Arc::new(path.into()));
             }
@@ -115,7 +115,7 @@ where
     }
     pub fn find(
         &self,
-        name_path: &NamePath,
+        name_path: &Vec<String>,
         environment: Option<&PluginR>,
     ) -> Option<&Arc<Entity>> {
         let plugin = match environment {

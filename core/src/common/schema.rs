@@ -159,7 +159,7 @@ impl Schema {
     }
     pub fn get_constraint<'a>(
         &self,
-        ids: &NamePath,
+        ids: &Vec<String>,
         constraint_id: &String,
     ) -> Option<&Arc<ShapeConstraint>> {
         let end = self.structure.find_struct(ids)?;
@@ -193,5 +193,8 @@ impl Schema {
             }
         }
         ret
+    }
+    pub fn get_self_shape_constraint_map(&self) -> &HashMap<String, Arc<ShapeConstraint>> {
+        &self.shape_constraint_maps[StructAccess::root().struct_offset]
     }
 }

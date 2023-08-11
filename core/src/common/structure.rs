@@ -116,10 +116,10 @@ impl Structure {
     pub fn get_local_prim_fields(&self) -> impl Iterator<Item = (&String, &PrimField)> {
         self.prim_fields.iter()
     }
-    fn find_struct_raw<'a>(&self, names: &NamePath) -> Option<(StructAccess, &Structure)> {
+    fn find_struct_raw<'a>(&self, names: &Vec<String>) -> Option<(StructAccess, &Structure)> {
         let mut access = StructAccess::root();
         let mut cur = self;
-        for id in names.all() {
+        for id in names {
             let field = cur.struct_fields.get(id)?;
             access = access.access_struct_field(&field);
             cur = field.structure.as_ref();
@@ -153,10 +153,10 @@ impl Structure {
         }
         Some((access, cur))
     }
-    pub fn find_struct<'a>(&self, names: &NamePath) -> Option<StructAccess> {
+    pub fn find_struct<'a>(&self, names: &Vec<String>) -> Option<StructAccess> {
         Some(self.find_struct_raw(names)?.0)
     }
-    pub fn find_prim(&self, names: &NamePath) -> Option<PrimAccess> {
+    pub fn find_prim(&self, names: &Vec<String>) -> Option<PrimAccess> {
         let (struct_access, structure) = self.find_struct_raw(&names.prefixs())?;
         Some(struct_access.access_prim_field(structure.prim_fields.get(names.name())?))
     }

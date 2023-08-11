@@ -4,6 +4,7 @@ use crate::resource::name_path::NamePath;
 pub enum Type {
     Int,
     Float,
+    Custom(String),
 }
 #[derive(Debug)]
 pub struct Descriptor {

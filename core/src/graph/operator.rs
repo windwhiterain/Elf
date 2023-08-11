@@ -1,6 +1,6 @@
 use std::sync::Weak;
 
-use crate::common::{self, operator::data_operator::DataOperatorR};
+use crate::common::{self, operator::data_operator::DataOperatorR, structure::PrimAccess};
 
 use super::dependency;
 
@@ -14,4 +14,17 @@ pub struct InputInterface {
 }
 pub enum Type {
     Data(Weak<DataOperatorR>),
+    Interface(InterfaceOperator),
+}
+pub enum DataFrom {
+    Data(usize),
+    Interface { name: String, prim: PrimAccess },
+}
+pub struct Link {
+    pub from: DataFrom,
+    pub to: Vec<String>,
+}
+pub struct InterfaceOperator {
+    pub interface: usize,
+    pub links: Vec<Link>,
 }

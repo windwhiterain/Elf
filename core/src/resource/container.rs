@@ -95,7 +95,7 @@ impl Std {
 #[derive(Debug)]
 pub struct Dir {
     pub path: PathBuf,
-    ///Whether the path is a relative path from the plugin folder path
+    ///Whether the path is a relative path from the plugin folder path or rust env
     pub is_local: bool,
 }
 impl Dir {
@@ -105,30 +105,32 @@ impl Dir {
 }
 #[derive(Debug)]
 pub struct InCode {
-    pub name_path: NamePath,
+    pub name_path: Vec<String>,
 }
 impl InCode {
-    pub fn new(name_path: NamePath) -> Self {
+    pub fn new(name_path: Vec<String>) -> Self {
         InCode { name_path }
     }
 }
 pub trait Directory {
-    fn abs_path(&self) -> PathBuf;
+    fn global_path(&self) -> PathBuf;
     fn local_path(&self) -> PathBuf;
 }
 impl<Entity> Directory for Entity
 where
     Entity: Attach<Dir> + Attach<Std>,
 {
-    fn abs_path(&self) -> PathBuf {
+    //relative to rust env
+    fn global_path(&self) -> PathBuf {
         let dir = self.comp::<Dir>();
         if !dir.is_local {
             dir.path.clone()
         } else {
-            let plugin_path = self.comp::<Std>().plugin.upgrade().unwrap().abs_path();
+            let plugin_path = self.comp::<Std>().plugin.upgrade().unwrap().global_path();
             plugin_path.join(dir.path.clone())
         }
     }
+    //relative to plugin
     fn local_path(&self) -> PathBuf {
         let dir = self.comp::<Dir>();
         if !dir.is_local {

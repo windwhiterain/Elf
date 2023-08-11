@@ -1,4 +1,4 @@
-use std::sync::Weak;
+use std::{collections::HashMap, sync::Weak};
 
 use crate::common::schema::SchemaR;
 

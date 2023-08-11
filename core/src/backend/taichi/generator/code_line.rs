@@ -21,7 +21,10 @@ impl CodeLines {
         }
         ret
     }
-    pub fn append(&mut self, mut other: Self) {
+    pub fn append(&mut self, mut other: Self, space_offset: usize) {
+        for line in &mut other.lines {
+            line.space += space_offset;
+        }
         self.lines.append(other.lines.as_mut());
     }
 }

@@ -8,6 +8,7 @@ impl From<PathBuf> for Node {
         Node { path: path }
     }
 }
+
 impl Node {
     pub fn path(&self) -> &PathBuf {
         &self.path
@@ -18,7 +19,7 @@ impl Node {
     pub fn is_dir(&self) -> bool {
         self.path.is_dir()
     }
-    pub fn get_all_dir(&self) -> impl Iterator<Item = Node> {
+    pub fn get_local_dirs(&self) -> impl Iterator<Item = Node> {
         let mut ret: Vec<Node> = vec![];
         for dir in fs::read_dir(&self.path).unwrap() {
             let entry = dir.unwrap();
@@ -29,7 +30,7 @@ impl Node {
         }
         ret.into_iter()
     }
-    pub fn get_all_file(&self, suffix: &str) -> impl Iterator<Item = Node> {
+    pub fn get_local_files(&self, suffix: &str) -> impl Iterator<Item = Node> {
         let mut ret: Vec<Node> = vec![];
         for dir in fs::read_dir(&self.path).unwrap() {
             let entry = dir.unwrap();
@@ -42,13 +43,13 @@ impl Node {
         }
         ret.into_iter()
     }
-    pub fn get_code(&self) -> String {
+    pub fn read(&self) -> String {
         fs::read_to_string(&self.path).unwrap()
     }
-    pub fn get_all_child_file(&self, suffix: &str) -> Vec<Node> {
-        let mut ret = Vec::<Node>::from_iter(self.get_all_file(suffix));
-        for node in self.get_all_dir() {
-            ret.append(&mut node.get_all_child_file(suffix));
+    pub fn get_files(&self, suffix: &str) -> Vec<Node> {
+        let mut ret = Vec::<Node>::from_iter(self.get_local_files(suffix));
+        for node in self.get_local_dirs() {
+            ret.append(&mut node.get_files(suffix));
         }
         ret
     }

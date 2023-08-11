@@ -12,7 +12,10 @@ use std::{
 use crate::{
     backend::{self, CodeFile, Parser},
     common::Schema,
-    help::{ecs::Entity, file},
+    help::{
+        ecs::{Entity, GenericAttach},
+        file,
+    },
 };
 
 use super::{
@@ -78,7 +81,7 @@ impl Plugin {
 }
 impl PluginR {
     pub fn get_code_file_node(&self) -> file::Node {
-        file::Node::from(self.abs_path().join(&*COLD_PATH))
+        file::Node::from(self.global_path().join(&*COLD_PATH))
     }
 }
 pub fn complete(
@@ -96,12 +99,12 @@ pub fn complete(
             plugins_content,
         );
     }
-    let files = plugin.get_code_file_node().get_all_child_file(".py");
+    let files = plugin.get_code_file_node().get_files(".py");
     let code_files = files
         .into_iter()
         .map(|f| CodeFile {
-            local_path: pathdiff::diff_paths(f.path(), plugin.abs_path()).unwrap(),
-            code: f.get_code(),
+            local_path: pathdiff::diff_paths(f.path(), plugin.get_code_file_node().path()).unwrap(),
+            code: f.read(),
         })
         .collect();
     let parser: Box<dyn backend::Parser> = match plugin.val.plugin_type {
@@ -116,7 +119,7 @@ struct JsonDenpendency {
 }
 #[derive(Debug)]
 pub struct Denpendency {
-    pub name_path: NamePath,
+    pub name_path: Vec<String>,
 }
 #[derive(Deserialize)]
 struct JsonInfor {
@@ -142,7 +145,7 @@ impl From<PathBuf> for File<Plugin> {
                     .dependency
                     .into_iter()
                     .map(|js| Denpendency {
-                        name_path: js.url.into(),
+                        name_path: vec![js.url],
                     })
                     .collect(),
                 json_infor.description,
