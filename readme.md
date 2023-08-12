@@ -1,34 +1,42 @@
-# Elf -- A node based operator network based on taichi-lang
-Features:
-1. GPU Parallel:with the powerful taichi-lang,we don't have to
-write low level compute shader to run parallel algorithm on GPU.
-2. Improved Dependency Graph:like Unreal,Houdini,Blender,we use a dependency
-graph to organize an algorithm in higher level,which brings much 
-more flexibility and intuitiveness.However,we have made some changes
-to improve some aspects.
-3. Embed into other Engine by transferring data via socket.This 
-overhead may limit the application in per-frame real-time affairs.
+# Elf -- A node based GPU compute network
+## Features:
+- Compile to Multiple Backends:currently impled taichi,hopefully vulkan,even blender next.
+- Structured Type System with Constraints:arrays of data are grouped into tree structure with nesting and constraints.
+- Dynamic Interface:node process on interface,each field of which points to actual data or field of other interfaces.Dynamic interface modifications bring flexibility.
+- Procedural rather than Functional:nodes are not functioned by input then output but just modify the input.
 
-catalogue:
-- [Application](#application)
-- [Network](#network)
-  - [Basic Idea](#basic-idea)
-  - [Basic Nodes](#basic-nodes)
-  - [Dataflow](#dataflow)
-  - [Interface](#interface)
-  - [Schema](#schema)
-- [Nodes](#nodes)
-  - [Effect Node](#effect-node)
-  - [Reform Node](#reform-node)
-  - [Generic Node](#generic-node)
-  - [Network Node](#network-node)
-  - [Cluster Node](#cluster-node)
-- [Template Network](#template-network)
-- [Plugin](#plugin)
-  - [Directory Structure](#directory-structure)
-  - [Compile To Taichi](#compile-to-taichi)
-- [Advantages Over The Node System Of Houdini](#advantages-over-the-node-system-of-houdini)
-- [Read More](#read-more)
+the rest of this readme is out of date,don't read it!
+---
+## catalogue:
+- [Elf -- A node based GPU compute network](#elf----a-node-based-gpu-compute-network)
+  - [Features:](#features)
+  - [the rest of this readme is out of date,don't read it!](#the-rest-of-this-readme-is-out-of-datedont-read-it)
+  - [catalogue:](#catalogue)
+  - [Application](#application)
+    - [Embed Into Unity Or Other Python Program](#embed-into-unity-or-other-python-program)
+  - [Network](#network)
+    - [Basic Idea](#basic-idea)
+    - [Basic Nodes](#basic-nodes)
+    - [Dataflow](#dataflow)
+    - [Interface](#interface)
+    - [Schema](#schema)
+      - [Field Type Annotation](#field-type-annotation)
+      - [Shape Constraint](#shape-constraint)
+      - [Readonly Constraint](#readonly-constraint)
+  - [Nodes](#nodes)
+    - [Effect Node](#effect-node)
+      - [Interface Node](#interface-node)
+      - [Operator Node](#operator-node)
+    - [Reform Node](#reform-node)
+    - [Generic Node](#generic-node)
+    - [Network Node](#network-node)
+    - [Cluster Node](#cluster-node)
+  - [Template Network](#template-network)
+  - [Plugin](#plugin)
+    - [Directory Structure](#directory-structure)
+    - [Compile To Taichi](#compile-to-taichi)
+  - [Advantages Over The Node System Of Houdini](#advantages-over-the-node-system-of-houdini)
+  - [Read More](#read-more)
 ## Application
 ### Embed Into Unity Or Other Python Program
 We have a socket program to handle data transfer and action 
