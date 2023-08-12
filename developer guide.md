@@ -1,63 +1,50 @@
 # Developer Guide
 ## Pipeline
 ```mermaid
-graph LR
-    subgraph pg[Plugin]
-        subgraph es[ElfScript]
-            subgraph ecope[Elf Scope]
-                sm[schema sytex]
-                op[operator sytex]
-            end
-            pycope[Python Scope]
-        end
-        fn[folded network file]
+graph TD
+    subgraph backend[Backend]
+        plugins[Plugins]
+        target[Target Program]
     end
-    subgraph ec[ElfSCript Compiler]
-        smc[Schema Compiler]
-        opc[Operator Compiler]
-    end
-    sm-->smc-->con[Context] & smd(schema description)
-    op-->opc-->exe[Executable] & opd(operator description)
-    pycope-->exe
-    pgld[Plugin Loader]
-    fn-->pgld-->net[Network]
-    netan[Network Analizer]
-    smd & opd & net-->netan-->annet[Analized Network]
-    exebd[Executable Builder]
-    con & exe & annet-->exebd-->exeres[Executable]
+    plugins--load-->resource[Resource]-.refered by.->network[Network] & ngraph[Graph]
+    network--compile to-->ngraph
+    ngraph--generate-->target
+    
 ```
-## Plugin Loader
+## Backend
 ```mermaid
 graph LR
-    meta[meta]
-    subgraph pg[Plugin]
-        subgraph es[ElfScript]
-            subgraph ecope[Elf Scope]
+    meta[global context]
+    subgraph pg[plugin folder]
+        subgraph es[host script program]
+            subgraph ecope[elf scope]
                 sm[schema sytex]
                 op[operator sytex]
             end
-            pycope[Python Scope]
+            pycope[host script scope]
         end
-        fn[folded network file]
+        subgraph fn[serialized folder]
+            network[network file]
+        end
     end
     meta--> sm & op
-    subgraph pl[Plugin Loader]
-        subgraph ec[ElfSCript Compiler]
-            smc(Schema Compiler)
-            opc(Operator Compiler)
-        end
-        pgld(network serializer)
+    subgraph ec[Parser]
+        smc(parse schema)
+        opc(parse operator)
     end
-    sm-->smc-->smd[Schema]
-    op-->opc-->exe[Executable] & opd[Operator]
-    pycope-->exe
-    
-    fn---pgld---net[Network]
+    pgld(serializer)
+    sm-->smc-->smd
+    op-->opc-->opd
+    pycope-.refered by.->opd
+    fn---pgld---net
+    subgraph resource[Resource]
+        net[Network]
+        opd[Operator]
+        smd[Schema]
+    end
 ```
-- [meta](meta):python code that won't be executed,only import to elfscript
-for code hint.
-- [Schema](core/core_py/common/schema.py):the description of a schema.
-- [executable](core/core_py/common/executable.py):a python class that actually perform the data
-modification via context.
-- [Operator](core/core_py/common/operator_resource.py):the description of a operator.
+- [global context]():reserved words in host script which compose the elf scope.
+- [Schema](core/src/common/schema.rs)
+- [Operator](core/src/common/operator/)
+- [Parser](core/src/backend/mod.rs)
 
