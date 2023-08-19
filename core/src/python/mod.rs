@@ -5,14 +5,11 @@ use pyo3::types::*;
 use std::collections::HashMap;
 use std::path::Path;
 use std::{fs::*, io::Read, path::PathBuf};
-#[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Context {
     pub env_path: PathBuf,
 }
-#[pymethods]
 impl Context {
-    #[new]
     pub fn new(env_path: PathBuf) -> Context {
         Context { env_path }
     }
@@ -34,14 +31,8 @@ impl Context {
             let sys = py.import("sys").unwrap();
             let sys_path = sys.getattr("path").unwrap().downcast::<PyList>().unwrap();
             sys_path.insert(0, self.site_package_path()).unwrap();
-            sys_path.insert(0, PathBuf::from("./core_py")).unwrap();
+            sys_path.insert(0, PathBuf::from("../core_py")).unwrap();
             py.run(&code, globals(py), None).expect("python err!");
         });
     }
-}
-pub fn gen_module(py: Python, m: &PyModule) -> PyResult<()> {
-    let sub_m = PyModule::new(py, "python")?;
-    sub_m.add_class::<Context>()?;
-    m.add_submodule(sub_m)?;
-    Ok(())
 }

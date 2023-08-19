@@ -1,6 +1,6 @@
 //!All implmentation for some important elf struct to display in isolated ui window
 
-use crate::{hashmap, resource, ui::schema_tree};
+use crate::{common::schema::SchemaR, hashmap, resource, ui::schema_tree};
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -17,10 +17,10 @@ use ui::*;
 ///Display an elf struct in it's ui in a popup window.
 pub trait UIDebug {
     ///Display an elf struct in it's ui in a popup window.
-    fn display(&self, context: &crate::Context);
+    fn show_graph(&self, context: &crate::Context);
 }
-impl UIDebug for resource::container::Elem<Schema> {
-    fn display(&self, context: &crate::Context) {
+impl UIDebug for SchemaR {
+    fn show_graph(&self, context: &crate::Context) {
         context
             .py_context
             .run(&PathBuf::from("./src/ui_debug/window.py"), |py| {
