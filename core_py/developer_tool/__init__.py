@@ -13,7 +13,7 @@ import command
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Elf")
+        self.setWindowTitle("Elf-developer_tool")
         toolbar = QToolBar()
         toolbar.addActions([
             newQAction("compile", self, command.compile),

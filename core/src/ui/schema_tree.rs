@@ -71,9 +71,3 @@ fn _get_node(schema: &Schema, sc_ids: &Vec<i32>, id: String, access: &structure:
         sc_id: -2,
     }
 }
-pub fn gen_module(py: Python, m: &PyModule) -> PyResult<()> {
-    let sub_m = PyModule::new(py, "schema_tree")?;
-    sub_m.add_class::<Node>()?;
-    m.add_submodule(sub_m)?;
-    Ok(())
-}

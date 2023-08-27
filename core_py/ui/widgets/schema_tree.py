@@ -1,13 +1,11 @@
 from ui.widgets.color_block import *
 from PySide6 import QtWidgets, QtGui
 from ui.help import *
-import elf_py
 import math
-RustNode = elf_py.ui.schema_tree.Node
 
 
 class Node:
-    def __init__(self, rust_node: RustNode):
+    def __init__(self, rust_node):
         self.x, self.y, self.w = 0.0, 0.0, 0.0
         self.name: str = rust_node.name
         self.childs: list[Node] = [Node(r_node) for r_node in rust_node.childs]
@@ -143,7 +141,7 @@ class SchemaTree(QtWidgets.QLabel):
         painter.end()
         self.setPixmap(canvas)
 
-    def set_schema(self, rust_root: RustNode):
+    def set_schema(self, rust_root):
         root = Node(rust_root)
         self.root = root
         cal_y(root, 1)

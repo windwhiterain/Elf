@@ -18,8 +18,10 @@ def compile():
     command(["maturin", "build", "-i", "python"])
     command(["pip", "install", "--force-reinstall", "--upgrade",
              "-t", env_path+"/Lib/site-packages", "./target/wheels/elf-0.1.0-cp310-none-win_amd64.whl"])
+    print("compile complete")
 
 
 def run():
-    command(["call", env_path+"/Scripts/activate", "\n",
+    command([
             "python", "../core_py/user_starter/__init__.py"])
+    print("run complete")

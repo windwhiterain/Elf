@@ -255,7 +255,7 @@ fn flaten_data_operator_name(id: usize) -> String {
 #[test]
 fn test() {
     let mut context = crate::starter::test_initialize();
-    context.resource.load_plugins();
+    context.resource.load();
     let graph = graph::test_instance(&context.resource);
     let generator = Generator::new(&graph, "../generated/taichi1".into());
     crate::backend::Generator::generate(&generator, &context);

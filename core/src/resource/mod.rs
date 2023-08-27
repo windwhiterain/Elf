@@ -36,11 +36,11 @@ pub struct PluginsContent {
     pub data_operators: Resources<DataOperatorR>,
 }
 impl Context {
-    pub fn new() -> Self {
+    pub fn new(plugin_search_paths: Vec<PathBuf>) -> Self {
         Context {
             plugins: Resources::default(),
             plugins_content: PluginsContent::default(),
-            plugin_search_paths: vec![PathBuf::from("../plugin")],
+            plugin_search_paths,
         }
     }
     fn scan_plugins(&mut self) {
@@ -57,7 +57,7 @@ impl Context {
             plugin::complete(plugin, &self.plugins, &mut self.plugins_content);
         }
     }
-    pub fn load_plugins(&mut self) {
+    pub fn load(&mut self) {
         self.scan_plugins();
         self.completed_plugins();
     }
@@ -168,7 +168,7 @@ where
 #[test]
 fn test() {
     let mut context = starter::test_initialize();
-    context.resource.load_plugins();
+    context.resource.load();
     let t = context.resource.plugins_content.schemas.get(1).unwrap();
     t.show_graph(&context);
 }

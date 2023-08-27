@@ -21,7 +21,9 @@ impl Node {
     }
     pub fn get_local_dirs(&self) -> impl Iterator<Item = Node> {
         let mut ret: Vec<Node> = vec![];
-        for dir in fs::read_dir(&self.path).unwrap() {
+        for dir in fs::read_dir(&self.path)
+            .expect(format!("invalid path:{}", self.path().to_string_lossy()).as_str())
+        {
             let entry = dir.unwrap();
             if !entry.file_type().unwrap().is_dir() {
                 continue;

@@ -1,4 +1,5 @@
 use crate::common::Schema;
+use crate::help::absolute_path::AbsolutePath;
 use pyo3::prelude::*;
 use pyo3::py_run;
 use pyo3::types::*;
@@ -31,8 +32,18 @@ impl Context {
             let sys = py.import("sys").unwrap();
             let sys_path = sys.getattr("path").unwrap().downcast::<PyList>().unwrap();
             sys_path.insert(0, self.site_package_path()).unwrap();
-            sys_path.insert(0, PathBuf::from("../core_py")).unwrap();
-            py.run(&code, globals(py), None).expect("python err!");
+            sys_path
+                .insert(0, PathBuf::from("../core_py").abs_path())
+                .unwrap();
+            match py.run(&code, globals(py), None) {
+                Ok(()) => (),
+                Err(e) => {
+                    let trace = e.traceback(py).unwrap();
+                    let infor = trace.format().unwrap();
+                    println!("python err:{e}\n{infor}");
+                    panic!();
+                }
+            }
         });
     }
 }

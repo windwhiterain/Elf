@@ -18,6 +18,7 @@ use std::{
     sync::Arc,
     sync::{Once, RwLock, Weak},
 };
+use ui::{resource_tree::ResourceTree, UIInfor};
 use ui_debug::UIDebug;
 
 use common::*;
@@ -32,9 +33,9 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(py_context: python::Context) -> Context {
+    pub fn new(py_context: python::Context, resource: resource::Context) -> Context {
         Context {
-            resource: resource::Context::new(),
+            resource: resource,
             py_context,
         }
     }
@@ -42,11 +43,17 @@ impl Context {
 #[pymethods]
 impl Context {
     #[new]
-    pub fn py_new(path: PathBuf) -> Context {
-        Self::new(python::Context::new(path))
+    pub fn py_new(py_env_path: PathBuf, plugin_search_path: PathBuf) -> Context {
+        Self::new(
+            python::Context::new(py_env_path),
+            resource::Context::new(vec![plugin_search_path]),
+        )
     }
-    pub fn load_plugins(&mut self) {
-        self.resource.load_plugins()
+    pub fn load_resource(&mut self) {
+        self.resource.load()
+    }
+    pub fn resource_infor(&self) -> ResourceTree {
+        self.resource.gen_infor()
     }
 }
 #[pymodule]

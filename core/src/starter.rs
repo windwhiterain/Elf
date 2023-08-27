@@ -1,15 +1,15 @@
 use crate::*;
 pub fn test_initialize() -> Context {
-    let py_context = python::Context::new(PathBuf::from("C:/SoftWare/PyCharm/Envs/Elf"));
-    let context = Context::new(py_context);
-    context
+    Context::py_new(
+        PathBuf::from("C:/SoftWare/PyCharm/Envs/Elf"),
+        PathBuf::from("../plugin"),
+    )
 }
 ///Where to start elf
 #[test]
 pub fn start() {
-    let py_context = python::Context::new(PathBuf::from("C:/SoftWare/PyCharm/Envs/Elf"));
-    let mut context = Context::new(py_context);
-    context.resource.load_plugins();
+    let mut context = test_initialize();
+    context.resource.load();
     let schema = context
         .resource
         .plugins_content

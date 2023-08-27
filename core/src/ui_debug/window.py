@@ -1,8 +1,8 @@
+from ui.palette import default
+from ui.widgets.schema_tree import SchemaTree
+from ui.widgets import schema_tree
 import sys
 from PySide6 import QtWidgets
-from ui.widgets import schema_tree
-from ui.widgets.schema_tree import SchemaTree
-from ui.palette import default
 
 schema_tree_color = schema_tree.ColorSheet(default.white, default.black, [
                                            default.red, default.blue, default.yellow])
