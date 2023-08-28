@@ -15,7 +15,7 @@ class ColorLink:
 class Palette:
     def __init__(self):
         self.white=ColorLink(QColor(230, 210, 190))
-        self.black=ColorLink(QColor(3, 5, 1))
+        self.black=ColorLink(QColor(5, 10, 3))
         self.red=ColorLink(QColor(240, 120, 15))
         self.blue=ColorLink(QColor(15, 120, 240))
         self.green=ColorLink(QColor(15, 240, 120))
@@ -29,10 +29,27 @@ class Palette:
 default=Palette()
 
 class ResourceTree:
-    def __init__(self,plugin:ColorLink,schema:ColorLink,data_operator:ColorLink,bg:ColorLink) -> None:
+    def __init__(self,plugin:ColorLink,schema:ColorLink,data_operator:ColorLink,bg:ColorLink,text:ColorLink) -> None:
         self.plugin=ColorLink(plugin)
         self.schema=ColorLink(schema)
         self.data_operator=ColorLink(data_operator)
-        self.bg=bg
-resource_tree=ResourceTree(default.blue_dark,default.green_dark,default.red_dark,default.black)
+        self.bg=ColorLink(bg)
+        self.text=ColorLink(text)
+resource_tree=ResourceTree(default.blue_dark,default.green_dark,default.red_dark,default.black,default.white)
+
+class Window:
+    def __init__(self,bg0:ColorLink,bg1:ColorLink,text:ColorLink,frame:ColorLink):
+        self.bg0=ColorLink(bg0)
+        self.bg1=ColorLink(bg1)
+        self.text=ColorLink(text)
+        self.frame=ColorLink(frame)
+window=Window(default.black_dark,default.black,default.white,default.blue)
+
+class ToolBar:
+    def __init__(self,bg0:ColorLink,bg1:ColorLink,text:ColorLink,frame:ColorLink):
+        self.bg0=ColorLink(bg0)
+        self.bg1=ColorLink(bg1)
+        self.text=ColorLink(text)
+        self.frame=ColorLink(frame)
+tool_bar=ToolBar(default.black_dark,default.black,default.white,default.blue)
 

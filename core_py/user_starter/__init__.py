@@ -13,6 +13,9 @@ settings = load(open(file_path+"/../../settings.json"))
 core_path = file_path+"/../../core_py"
 sys.path.append(core_path)
 from ui.widgets.resource_tree import ResourceTree
+from ui.widgets.window import Window
+from ui.palette import tool_bar
+from ui.help import *
 env_path = settings["python_interpreter_path"]
 plugin_path = file_path+"/../../plugin"
 
@@ -27,15 +30,31 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Elf")
         toolbar = QToolBar()
         toolbar.addActions([
-
+            newQAction("reload",self,context.load_resource)
         ])
+        toolbar.setStyleSheet("""
+            QToolBar{
+                background-color:"""+tool_bar.bg0.get().name()+""";
+                padding:1;
+            }
+            QToolButton{
+                background-color:"""+tool_bar.bg1.get().name()+""";
+                padding:2;
+                border-style:solid;
+                border-width:2;
+                border-color:"""+tool_bar.frame.get().name()+""";
+                color:"""+tool_bar.text.get().name()+""";
+            }
+        """)
         self.addToolBar(toolbar)
         resource_tree = ResourceTree()
         resource_tree.refresh(context.resource_infor())
-        self.setCentralWidget(resource_tree)
+        window=Window()
+        window.add_tab(resource_tree,"resource")
+        self.setCentralWidget(window)
 
 
 app = QApplication(sys.argv)
-window = MainWindow()
-window.show()
+Window = MainWindow()
+Window.show()
 app.exec()

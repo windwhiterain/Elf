@@ -3,7 +3,7 @@ from PySide6 import QtWidgets, QtGui
 from ui.help import *
 from ui.palette import resource_tree
 from ui.palette import ColorLink
-import math
+from PySide6.QtWidgets import QSizePolicy
 
 class ResourceTree(QtWidgets.QLabel):
     node_height = 14
@@ -14,7 +14,7 @@ class ResourceTree(QtWidgets.QLabel):
     def add_resource(self,resource,offset:float,color:ColorLink):
         lable = QtWidgets.QLabel()
         lable.setParent(self)
-        set_color(lable,color)
+        set_color(lable,color,self.color_sheet.text)
         lable.setText(resource.name)
         set_geof(lable, ((self.width()+offset)/2, (self.index+0.5)*self.node_height),
                 (self.width()-offset, self.node_height))
