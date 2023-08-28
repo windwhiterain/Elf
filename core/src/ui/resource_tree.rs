@@ -8,29 +8,38 @@ use crate::help::key_value::KeyValue;
 #[derive(Debug, Default)]
 #[pyclass]
 pub struct ResourceTree {
+    #[pyo3(get)]
     pub plugins: Vec<Plugin>,
 }
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 #[pyclass]
 
 pub struct Plugin {
+    #[pyo3(get)]
     pub name: String,
+    #[pyo3(get)]
     pub id: usize,
+    #[pyo3(get)]
     pub schemas: Vec<Schema>,
+    #[pyo3(get)]
     pub data_operators: Vec<DataOperator>,
 }
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 #[pyclass]
 
 pub struct Schema {
+    #[pyo3(get)]
     pub name: String,
+    #[pyo3(get)]
     pub id: usize,
 }
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 #[pyclass]
 
 pub struct DataOperator {
+    #[pyo3(get)]
     pub name: String,
+    #[pyo3(get)]
     pub id: usize,
 }
 impl UIInfor<ResourceTree> for resource::Context {
@@ -50,24 +59,18 @@ impl UIInfor<ResourceTree> for resource::Context {
         for schema in self.plugins_content.schemas.get_all() {
             ret.plugins[schema.std.plugin.upgrade().unwrap().std.id()]
                 .schemas
-                .key_value(
-                    schema.std.id(),
-                    Schema {
-                        name: schema.std.name.clone(),
-                        id: schema.std.id(),
-                    },
-                )
+                .push(Schema {
+                    name: schema.std.name.clone(),
+                    id: schema.std.id(),
+                })
         }
         for data_operator in self.plugins_content.data_operators.get_all() {
             ret.plugins[data_operator.std.plugin.upgrade().unwrap().std.id()]
-                .schemas
-                .key_value(
-                    data_operator.std.id(),
-                    Schema {
-                        name: data_operator.std.name.clone(),
-                        id: data_operator.std.id(),
-                    },
-                )
+                .data_operators
+                .push(DataOperator {
+                    name: data_operator.std.name.clone(),
+                    id: data_operator.std.id(),
+                })
         }
         ret
     }

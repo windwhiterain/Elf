@@ -10,11 +10,15 @@ import os
 from json import load
 file_path = os.path.dirname(__file__)
 settings = load(open(file_path+"/../../settings.json"))
+core_path = file_path+"/../../core_py"
+sys.path.append(core_path)
+from ui.widgets.resource_tree import ResourceTree
 env_path = settings["python_interpreter_path"]
 plugin_path = file_path+"/../../plugin"
+
+
 context = elf_rust.Context(env_path, plugin_path)
 context.load_resource()
-print(context.resource_infor())
 
 
 class MainWindow(QMainWindow):
@@ -26,6 +30,9 @@ class MainWindow(QMainWindow):
 
         ])
         self.addToolBar(toolbar)
+        resource_tree = ResourceTree()
+        resource_tree.refresh(context.resource_infor())
+        self.setCentralWidget(resource_tree)
 
 
 app = QApplication(sys.argv)

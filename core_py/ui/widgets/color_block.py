@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget
-from ui.common import *
 from PySide6.QtGui import QPalette
+from ui.palette import ColorLink
 class ColorBlock(QWidget):
     def __init__(self, color:ColorLink):
         super().__init__()
