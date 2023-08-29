@@ -1,8 +1,8 @@
-use pyo3::pyclass;
+use pyo3::{pyclass, pymethods};
 
 use crate::resource::{self, plugin};
 
-use super::UIInfor;
+use super::{schema_tree, UIInfor};
 use crate::help::key_value::KeyValue;
 
 #[derive(Debug, Default)]

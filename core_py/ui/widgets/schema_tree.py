@@ -1,6 +1,9 @@
+from typing import Iterable, Optional
 from ui.widgets.color_block import *
 from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Qt
 from ui.help import *
+from ui.palette import schema_tree
 import math
 
 
@@ -71,25 +74,17 @@ def offset_to_z(self: Node) -> tuple[float, float]:
     return max_x - min_x, max_y - min_y
 
 
-class ColorSheet:
-    def __init__(self, bg: Color, line: Color, shape_constraints: list[Color]):
-        self.bg = ColorLink(bg)
-        self.line = ColorLink(line)
-        self.shape_constraints = [ColorLink(color)
-                                  for color in shape_constraints]
-
-
 class SchemaTree(QtWidgets.QLabel):
     interval_x = 1.0
     interval_y = 0.3
     node_w = 2.0
     node_h = 0.5
 
-    def __init__(self, color_sheet: ColorSheet):
+    def __init__(self):
         super().__init__()
         self.root: Optional[Node] = None
         self.w, self.h = 0.0, 0.0
-        self.color_sheet = color_sheet
+        self.color_sheet = schema_tree
 
     def scale_to(self, w: float, h: float):
         self.sc_w, self.sc_h = w / self.w, h / self.h
@@ -110,13 +105,24 @@ class SchemaTree(QtWidgets.QLabel):
         w, h = self.apply(self.w, self.h)
         self.setFixedSize(w, h)
         canvas = QtGui.QPixmap(w, h)
-        canvas.fill(self.color_sheet.bg.get())
+        canvas.fill(self.color_sheet.bg0.get())
         painter = QtGui.QPainter(canvas)
+        painter.setPen(self.color_sheet.line.get())
         for node in iter(self.root):
             label = QtWidgets.QLabel()
             label.setParent(self)
             label.setText(node.name)
-            label.setAutoFillBackground(True)
+            label.setStyleSheet("""
+                QLabel{
+                    background-color:"""+self.color_sheet.bg1.get().name()+""";
+                    border-style:solid;
+                    border-width:2px;
+                    border-color:"""+self.color_sheet.frame.get().name()+""";
+                    color:"""+self.color_sheet.text.get().name()+""";
+                    text-align:right;
+                }
+            """)
+            label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
             x1, y1 = self.apply(node.x, node.y)
             y_mid = self.apply_y(
                 node.y+(SchemaTree.node_h+SchemaTree.interval_y)/2)

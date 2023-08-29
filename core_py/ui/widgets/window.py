@@ -1,7 +1,6 @@
 from ui.widgets.color_block import *
 from PySide6 import QtWidgets, QtGui
-from PySide6.QtWidgets import QTabWidget
-from PySide6.QtWidgets import QSizePolicy
+from PySide6.QtWidgets import QSizePolicy,QVBoxLayout,QTabWidget
 from ui.palette import window
 from ui.help import *
 class Window(QWidget):
@@ -22,10 +21,14 @@ class Window(QWidget):
                 border-color:"""+self.color_sheet.frame.get().name()+""";
                 padding:2;
             }
+            QTabBar::tab:hover {
+                border-color:"""+self.color_sheet.focus.get().name()+""";
+            }
             QTabWidget::pane {
             }
         """)
-        self.tabs.setGeometry(self.geometry())
-        self.tabs.setParent(self)
+        layout=QVBoxLayout()
+        layout.addWidget(self.tabs)
+        self.setLayout(layout)
     def add_tab(self,widget:QWidget,name:str):
         self.tabs.addTab(widget,name)

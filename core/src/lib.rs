@@ -18,7 +18,7 @@ use std::{
     sync::Arc,
     sync::{Once, RwLock, Weak},
 };
-use ui::{resource_tree::ResourceTree, UIInfor};
+use ui::{resource_tree::ResourceTree, schema_tree, UIInfor};
 use ui_debug::UIDebug;
 
 use common::*;
@@ -54,6 +54,14 @@ impl Context {
     }
     pub fn resource_infor(&self) -> ResourceTree {
         self.resource.gen_infor()
+    }
+    pub fn schema_infor(&self, id: usize) -> schema_tree::Node {
+        self.resource
+            .plugins_content
+            .schemas
+            .get(id)
+            .unwrap()
+            .gen_infor()
     }
 }
 #[pymodule]

@@ -6,6 +6,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtCore import Qt
+file_path = os.path.dirname(__file__)
+core_path = file_path+"/../../core_py"
+sys.path.append(core_path)
 from ui.help import *
 import command
 
