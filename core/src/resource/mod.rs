@@ -136,6 +136,13 @@ where
         }
         None
     }
+    pub fn filter_by_name<'a>(&'a self, name: &'a String) -> impl Iterator<Item = &Arc<Entity>> + 'a
+    where
+        Entity: Attach<Std>,
+    {
+        self.get_all()
+            .filter(move |r| &r.as_ref().comp::<Std>().name == name)
+    }
     pub fn get_all(&self) -> impl Iterator<Item = &Arc<Entity>> {
         compress(self.id_map.iter())
     }

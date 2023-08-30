@@ -8,10 +8,11 @@ class Window(QWidget):
         super().__init__()
         self.color_sheet=window
         self.tabs=QTabWidget()
-        patette=self.tabs.palette()
-        patette.setColor(QPalette.ColorRole.Window,self.color_sheet.bg0.get())
-        self.tabs.setPalette(patette)
-        self.tabs.setAutoFillBackground(True)
+        self.setStyleSheet("""
+            QWidget{
+                background-color:"""+self.color_sheet.bg0.get().name()+"""
+            }
+        """)
         self.tabs.setStyleSheet("""
             QTabBar::tab {
                 background-color: """+self.color_sheet.bg1.get().name()+""";

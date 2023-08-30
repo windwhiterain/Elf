@@ -119,7 +119,6 @@ class SchemaTree(QtWidgets.QLabel):
                     border-width:2px;
                     border-color:"""+self.color_sheet.frame.get().name()+""";
                     color:"""+self.color_sheet.text.get().name()+""";
-                    text-align:right;
                 }
             """)
             label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)

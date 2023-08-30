@@ -6,11 +6,13 @@ from typing import *
 class ColorLink:
     def __init__(self,link_to:Union['ColorLink',QColor]):
         self.link_to=link_to
-    def get(self):
+    def get(self)->QColor:
         cur=self.link_to
         while isinstance(cur,ColorLink):
             cur=cur.link_to
         return cur
+    def code(self)->str:
+        return self.get().name()
 
 class Palette:
     def __init__(self):
@@ -72,3 +74,24 @@ class MainWindow:
     def __init__(self,bg:ColorLink):
         self.bg=ColorLink(bg)
 main_window=MainWindow(default.white_dark)
+
+class NetworkPanel:
+    def __init__(self,bg:ColorLink):
+        self.bg=ColorLink(bg)
+network_panel=NetworkPanel(default.black_dark)
+
+class ChooseList:
+    def __init__(self,bg0:ColorLink,bg1:ColorLink,text:ColorLink,frame:ColorLink):
+        self.bg0=ColorLink(bg0)
+        self.bg1=ColorLink(bg1)
+        self.text=ColorLink(text)
+        self.frame=ColorLink(frame)
+choose_list=ChooseList(default.black,default.black_dark,default.white,default.blue)
+
+class Node:
+    def __init__(self,bg:ColorLink,text:ColorLink,frame_data_operator:ColorLink,frame_interface_operator:ColorLink):
+        self.bg=ColorLink(bg)
+        self.text=ColorLink(text)
+        self.frame_data_operator=ColorLink(frame_data_operator)
+        self.frame_interface_operator=ColorLink(frame_interface_operator)
+node=Node(default.black,default.white,default.red,default.green)

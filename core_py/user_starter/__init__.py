@@ -9,20 +9,18 @@ import elf_rust
 import os
 from json import load
 file_path = os.path.dirname(__file__)
-settings = load(open(file_path+"/../../settings.json"))
 core_path = file_path+"/../../core_py"
 sys.path.append(core_path)
 from ui.widgets.resource_tree import ResourceTree
 from ui.widgets.schema_tree import SchemaTree
 from ui.widgets.window import Window
+from ui.widgets.network_panel import NetworkPanel       
 from ui.palette import tool_bar,main_window
 from ui.help import *
-env_path = settings["python_interpreter_path"]
-plugin_path = file_path+"/../../plugin"
+from context import context
 
 
-context = elf_rust.Context(env_path, plugin_path)
-context.load_resource()
+
 
 class Debuger:
     def __init__(self) -> None:
@@ -68,8 +66,12 @@ class MainWindow(QMainWindow):
         """)
         resource_tree = ResourceTree()
         resource_tree.refresh(context.resource_infor(),context,debuger)
+        network=elf_rust.Network()
+        network_panel=NetworkPanel()
+        network_panel.refresh(network)
         window=Window()
         window.add_tab(resource_tree,"resource")
+        window.add_tab(network_panel,"network")
         self.setCentralWidget(window)
 
 
